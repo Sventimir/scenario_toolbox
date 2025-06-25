@@ -1,22 +1,9 @@
-local Scenario = {
-  carryover_percentage = 50,
-  carryover_add = true,
-  victory_when_enemies_defeated = false,
-  {"time", {
-     id = "underground",
-     name = "Podziemia",
-     image = "misc/time-schedules/schedule-underground.png",
-      lawful_bonus = -25,
-      red = -60,
-      green = -45,
-      blue = -25
-  }}
-}
+WML = require("scenario_toolbox/lua/wml")
 
-Scenario.__index = Scenario
+local Scenario = WML.new()
 
-function Scenario.new(id, name)
-  return setmetatable({ id = id, name = name }, Scenario)
+function Scenario.new(wml)
+  return setmetatable(wml, Scenario)
 end
 
 return Scenario

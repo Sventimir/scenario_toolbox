@@ -6,7 +6,7 @@ Scenario = require("scenario_toolbox/lua/scenario")
 Gen = {}
 
 function Gen:make(cfg)
-  local s = Scenario.new(cfg.scenario)
+  local s = Scenario.new(cfg.scenario[1])
   self.map = Map.new(cfg.width, cfg.height, "G")
   s.map_data = self.map:as_map_data()
   return s
