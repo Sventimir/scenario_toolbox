@@ -1,17 +1,24 @@
 WML = {}
-WML.__index = function(this, prop)
+WML.__index = WML
+
+function WML:new(wml)
+  local this = wml or {}
+  this.__wml = true
+  return setmetatable(this, self)
+end
+
+function WML:find(tag, index)
   local res = {}
   local i = 1
 
-  if WML[prop] then
-    return WML[prop]
-  end
-
   while true do
-    local p = rawget(this, i)
+    local p = rawget(self, i)
     if p then
-      if rawget(p, 1) == prop then
+      if rawget(p, 1) == tag then
         table.insert(res, WML.new(rawget(p, 2)))
+        if #res == index then
+          return res[index]
+        end
       end
       i = i + 1
     else
@@ -24,16 +31,25 @@ WML.__index = function(this, prop)
   end
 end
 
-function WML.new(wml)
-  if not wml then
-    wml = {}
-  end
-  wml.__wml = true
-  return setmetatable(wml, WML)
-end
-
 function WML:insert(tag, value)
   table.insert(self, {tag, value})
+end
+
+function WML:pretty_print(indent)
+  local out = ""
+  for name, value in pairs(self) do
+    if string.sub(name, 1, 2) == "__" then
+    elseif tonumber(name) then
+      out = string.format("%s%s[%s]\n%s[/%s]\n", out, indent, value[1], value[2]:pretty_print(indent .. "  "), value[1])
+    else
+      out = string.format("%s%s%s = \"%s\"\n", out, indent, name, value)
+    end
+  end
+  return out
+end
+
+function WML:__tostring()
+  return self:pretty_print("")
 end
 
 return WML

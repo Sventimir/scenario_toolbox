@@ -13,10 +13,14 @@ function as_table(iter, state, ctrl)
 end
 
 function iter(tbl)
-  local i = 0
-  return function()
-    i = i + 1
-    return tbl[i]
+  if not tbl then
+    return function() return nil end
+  else
+    local i = 0
+    return function()
+      i = i + 1
+      return tbl[i]
+    end
   end
 end
 
