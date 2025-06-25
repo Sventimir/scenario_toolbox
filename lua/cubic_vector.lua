@@ -1,5 +1,4 @@
 require("scenario_toolbox/lua/core")
-require("scenario_toolbox/lua/core")
 
 Vec = {}
 Vec.__index = Vec

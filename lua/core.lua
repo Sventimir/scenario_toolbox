@@ -1,6 +1,6 @@
 if not pcall(function() return require end) then
   require = function(mod)
-    wesnoth.require("~add-ons/{mod}.lua")
+    return wesnoth.require(string.format("~add-ons/%s.lua", mod))
   end
 end
 
