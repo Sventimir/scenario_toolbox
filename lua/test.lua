@@ -13,4 +13,5 @@ scenario = WML:new({ id = "example", name = "Example" })
 cfg:insert("scenario", scenario)
 
 m = Gen:make(cfg)
-print(m:__tostring())
+Gen.map:print_hexes()
+-- print(m:__tostring())

@@ -1,11 +1,10 @@
 local Vec = require("scenario_toolbox/lua/cubic_vector")
-local Vec = require("scenario_toolbox/lua/cubic_vector")
 
 Hex = {}
 Hex.__index = Hex
 
-function Hex.new(map, x, y, terrain)
-  return setmetatable({ map = map, x = x, y = y, terrain = terrain}, Hex)
+function Hex:new(map, x, y, terrain)
+  return setmetatable({ map = map, x = x, y = y, terrain = terrain}, self)
 end
 
 function Hex:translate(v)
@@ -16,8 +15,12 @@ function Hex:circle(radius)
   return map(function(v) return self:translate(v) end, Vec.equidistant(radius))
 end
 
+function Hex:show()
+  return self.terrain
+end
+
 function Hex:__tostring()
-  return string.format("(%d, %d)", self.x, self.y)
+  return string.format("(%d, %d)[%s]", self.x, self.y, self.terrain)
 end
 
 function Hex:on_border()

@@ -1,16 +1,13 @@
-require("scenario_toolbox/lua/hex")
-require("scenario_toolbox/lua/hex")
-
-Map = {}
+Map = { Hex = require("scenario_toolbox/lua/hex") }
 Map.__index = Map
 
-function Map.new(width, height, terrain)
-  local m = setmetatable({ width = width, height = height, default_terrain = terrain }, Map)
+function Map:new(width, height, terrain)
+  local m = setmetatable({ width = width, height = height, default_terrain = terrain }, self)
 
   for y = 0, height + 1 do
     local row = {}
     for x = 0, width + 1 do
-      row[x] = Hex.new(m, x, y, terrain)
+      row[x] = self.Hex:new(m, x, y, terrain)
     end
     m[y] = row
   end
@@ -58,6 +55,29 @@ function Map:as_map_data()
   end
 
   return map
+end
+
+function Map:print_hexes()
+  for y = 0, 2 * (self.height + 1) do
+    if y % 2 == 0 then
+      io.write("_/")
+    else
+      io.write(" ")
+    end
+    for x = 0, self.width + 1 do
+      if x % 2 == y % 2 then
+        io.write(self[mathx.ceil(y / 2)][x]:show())
+      elseif x <= self.width then
+        io.write("\\_/")
+      end
+    end
+    if y % 2 == 1 then
+      io.write("\\_")
+    else
+      io.write("\\_/")
+    end
+    io.write("\n")
+  end
 end
 
 function Map:labels_wml()

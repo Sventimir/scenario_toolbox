@@ -3,6 +3,9 @@ if not pcall(function() return require end) then
     return wesnoth.require(string.format("~add-ons/%s.lua", mod))
   end
 end
+if not mathx then
+  mathx = math
+end
 
 function as_table(iter, state, ctrl)
   local t = {}

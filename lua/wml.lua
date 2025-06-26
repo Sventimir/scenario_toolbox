@@ -40,7 +40,12 @@ function WML:pretty_print(indent)
   for name, value in pairs(self) do
     if string.sub(name, 1, 2) == "__" then
     elseif tonumber(name) then
-      out = string.format("%s%s[%s]\n%s[/%s]\n", out, indent, value[1], value[2]:pretty_print(indent .. "  "), value[1])
+      if value[2].__wml then
+        content = value[2]:pretty_print(indent .. "  ")
+      else
+        content = value[2].__tostring()
+      end
+      out = string.format("%s%s[%s]\n%s[/%s]\n", out, indent, value[1], content, value[1])
     else
       out = string.format("%s%s%s = \"%s\"\n", out, indent, name, value)
     end
