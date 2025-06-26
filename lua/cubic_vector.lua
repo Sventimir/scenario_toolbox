@@ -46,14 +46,14 @@ function Vec:length()
 end
 
 function Vec:contains(v)
-  return int.signum(self.s) == int.signum(v.s) and mathx.abs(self.s) >= mathx.abs(v.s)
-    and int.signum(self.se) == int.signum(v.se) and mathx.abs(self.se) >= mathx.abs(v.se)
+  return arith.signum(self.s) == arith.signum(v.s) and mathx.abs(self.s) >= mathx.abs(v.s)
+    and arith.signum(self.se) == arith.signum(v.se) and mathx.abs(self.se) >= mathx.abs(v.se)
 end
 
 function Vec:split_into_unitary()
   local function it(state)
-    local s = int.signum(state.remainder.s)
-    local se = int.signum(state.remainder.se)
+    local s = arith.signum(state.remainder.s)
+    local se = arith.signum(state.remainder.se)
     if s == 0 and se == 0 then
       return nil
     end

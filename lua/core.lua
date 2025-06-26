@@ -5,6 +5,9 @@ if not pcall(function() return require end) then
 end
 if not mathx then
   mathx = math
+  function mathx.random_choice(input)
+    return input[mathx.random(#input)]
+  end
 end
 
 function as_table(iter, state, ctrl)
@@ -179,5 +182,5 @@ function keys(t)
   return keys
 end
 
-int = require("int")
-str = require("str")
+arith = require("scenario_toolbox/lua/arith")
+str = require("scenario_toolbox/lua/str")

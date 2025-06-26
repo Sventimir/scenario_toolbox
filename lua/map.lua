@@ -58,6 +58,16 @@ function Map:as_map_data()
 end
 
 function Map:print_hexes()
+  io.write(" ")
+  for x = 0, self.width + 1 do
+    if x % 2 == 1 then
+        io.write(self[0][x]:show())
+      elseif x <= self.width then
+        io.write("\\_/")
+    end
+  end
+  io.write("\n")
+
   for y = 0, 2 * (self.height + 1) do
     if y % 2 == 0 then
       io.write("_/")
