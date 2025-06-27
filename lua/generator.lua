@@ -1,4 +1,5 @@
 Vec = require("scenario_toolbox/lua/cubic_vector")
+CartVec = require("scenario_toolbox/lua/carthesian_vector")
 Hex = require("scenario_toolbox/lua/hex")
 Map = require("scenario_toolbox/lua/map")
 Side = require("scenario_toolbox/lua/side")
@@ -67,22 +68,55 @@ function Gen:paint_circle(center, radius, biome, overwrite)
   end
 end
 
-function Gen:height(hex)
-  local mean_height = arith.mean(filter_map(hex_height, hex:circle(1)))
-  if not mean_height then
-    return
-  elseif mean_height > 0 then
-    mean_height = mathx.floor(mean_height)
-  else
-    mean_height = mathx.ceil(mean_height)
+function Gen:border_height(hex)
+  hex.height = - mathx.random(1, 2)
+end
+
+function Gen:fjord_height(hex)
+  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))))
+  local h = mean + mathx.random(-1, 1)
+  if h >= 0 and mean <= 0 then
+    h = h + mathx.random(0, 1)
   end
-  d = mathx.random(-2, 2)
+  hex.height = mathx.max(-2, mathx.min(2, h))
+end
+
+function Gen:interior_height(hex)
+  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))))
+  local d = arith.round(mathx.random(-2, 2) / 2)
   if d > 0 then
-    d = mathx.floor(d / 2)
-  else
-    d = mathx.ceil(d / 2)
+    d = d + mathx.random(0, 1)
   end
-  hex.height = mean_height + d
+  hex.height = mathx.max(-2, mathx.min(2, mean + d))
+end
+
+function Gen:height_map()
+  local x = 0
+  local y = 0
+  local next_movement = cycle({ CartVec.east, CartVec.south, CartVec.west, CartVec.north })
+  local v = next_movement()
+  local hex = self.map:get(x, y)
+  local set_height = self.border_height
+
+  while not hex.height do
+    set_height(self, hex)
+    x, y = v:translate(x, y)
+    hex = self.map:get(x, y)
+    if not hex or hex.height then
+      local next_v = next_movement()
+      x, y = (next_v - v):translate(x, y)
+      hex = self.map:get(x, y)
+      v = next_v
+    end
+    if x == 3 and y == 3 then
+      set_height = self.fjord_height
+    elseif x == 9 and y == 9 then
+      set_height = self.interior_height
+    end
+  end
+
+  self.center = hex
+  self.center.height = 0
 end
 
 function Gen:make(cfg)
@@ -128,23 +162,7 @@ function Gen:make(cfg)
 
   self.center = self.map:get(cfg.width / 2, cfg.height / 2)
   
-  self.center.height = 0
-  for x = 0, cfg.width + 1 do
-    self.map:get(x, 0).height = -2
-    self.map:get(x, cfg.height + 1).height = -2
-  end
-  for y = 0, cfg.width + 1 do
-    self.map:get(0, y).height = -2
-    self.map:get(cfg.width + 1, y).height = -2
-  end
-  -- 0.75 * width is roughly half of the length of map's diagonal.
-  for r = 1, 0.75 * cfg.width do
-    for hex in self.center:circle(r) do
-      if not hex.height then
-        self:height(hex)
-      end
-    end
-  end
+  self:height_map()
 
   self.center.biome = Meadows
   self:paint_circle(self.center, 3, Meadows)
