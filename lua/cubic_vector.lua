@@ -4,7 +4,7 @@ Vec = {}
 Vec.__index = Vec
 
 function Vec.new(s, se)
-  return setmetatable({ s = s, se = se}, Vec)
+  return setmetatable({ s = s, se = se }, Vec)
 end
 
 function Vec:sw()
@@ -32,8 +32,7 @@ function Vec:__tostring()
 end
 
 function Vec:scale(f, round)
-  local rnd = round or mathx.floor
-  return Vec.new(rnd(self.s * f), rnd(self.se * f))
+  return Vec.new(mathx.floor(self.s * f), mathx.floor(self.se * f))
 end
 
 function Vec:translate(x, y)
