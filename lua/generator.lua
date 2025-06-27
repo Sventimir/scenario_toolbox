@@ -42,21 +42,58 @@ function GenHex:show_coord()
   end
 end
 
-GenHex.show = GenHex.show_height
+GenHex.show = GenHex.show_biome
 
 Map.Hex = GenHex
 
-Gen = {
-  side_color = { "red", "blue", "green" }
-}
-
 NullBiome = Biome:new("none", "x", "_off^_usr")
 NullBiome._nil = true
+
 Meadows = Biome:new("meadows", "[38;5;34mM[0m", "Gg")
+Meadows.heights = {
+  [-2] = "Wo",
+  [-1] = "Ww",
+  [0]  = "Gg",
+  [1]  = "Hh",
+  [2]  = "Mm",
+}
+
+Desert = Biome:new("desert", "[38;5;11mD[0m", "Dd")
+Desert.heights = {
+  [-2] = "Ww",
+  [-1] = "Dd",
+  [0]  = "Dd",
+  [1]  = "Hd",
+  [2]  = "Md",
+}
+
+Snow = Biome:new("snow", "[38;5;15mS[0m", "Dd")
+Snow.heights = {
+  [-2] = "Ai",
+  [-1] = "Aa",
+  [0]  = "Ha",
+  [1]  = "Ha",
+  [2]  = "Ms",
+}
+
+Swamp = Biome:new("swamp", "[38;5;2mB[0m", "Dd")
+Swamp.heights = {
+  [-2] = "Ww",
+  [-1] = "Ss",
+  [0]  = "Ss",
+  [1]  = "Sm",
+  [2]  = "Hhd",
+}
+
 
 local function hex_height(hex)
   if hex then return hex.height else return nil end
 end
+
+Gen = {
+  side_color = { "red", "blue", "green" },
+  biomes = { Meadows, Swamp, Desert, Snow },
+}
 
 function Gen:paint_circle(center, radius, biome, overwrite)
   for d = 1, radius do
@@ -110,13 +147,25 @@ function Gen:height_map()
     end
     if x == 3 and y == 3 then
       set_height = self.fjord_height
-    elseif x == 9 and y == 9 then
+    elseif x == 10 and y == 10 then
       set_height = self.interior_height
     end
   end
 
   self.center = hex
   self.center.height = 0
+end
+
+function Gen:biome_map()
+  for r = 0, 1.5 * mathx.max(self.map.height, self.map.width) do
+    for hex in self.center:circle(r) do
+      if r < 4 then
+        hex.biome = Meadows
+      else
+        hex.biome = self.biomes[mathx.random(#self.biomes)]
+      end
+    end
+  end
 end
 
 function Gen:make(cfg)
@@ -165,12 +214,13 @@ function Gen:make(cfg)
   self:height_map()
 
   self.center.biome = Meadows
-  self:paint_circle(self.center, 3, Meadows)
+  self:biome_map()
   
   local potential_boss_locations = as_table(self.center:circle(cfg.width / 2 - 1))
   self.boss_loc = potential_boss_locations[mathx.random(#potential_boss_locations)]
   self.boss_loc.biome = Meadows
   self:paint_circle(self.boss_loc, 3, Meadows)
+  
 
   for hex in self.map:iter() do
     hex.terrain = hex.biome:terrain(hex)
