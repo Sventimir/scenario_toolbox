@@ -1,10 +1,11 @@
 WML = {}
-WML.__index = WML
 
 function WML:new(wml)
   local this = wml or {}
   this.__wml = true
-  return setmetatable(this, self)
+  setmetatable(this, self)
+  self.__index = self
+  return this
 end
 
 function WML:find(tag, index)
@@ -15,14 +16,14 @@ function WML:find(tag, index)
     local p = rawget(self, i)
     if p then
       if rawget(p, 1) == tag then
-        table.insert(res, WML.new(rawget(p, 2)))
+        table.insert(res, WML:new(rawget(p, 2)))
         if #res == index then
           return res[index]
         end
       end
       i = i + 1
     else
-      if next(res) then
+      if not index then
         return res
       else
         return nil
@@ -43,11 +44,16 @@ function WML:pretty_print(indent)
       if value[2].__wml then
         content = value[2]:pretty_print(indent .. "  ")
       else
-        content = value[2].__tostring()
+        content = value[2]:__tostring()
       end
       out = string.format("%s%s[%s]\n%s[/%s]\n", out, indent, value[1], content, value[1])
     else
-      out = string.format("%s%s%s = \"%s\"\n", out, indent, name, value)
+      if type(value) == string then
+        content = string.format("\"%s\"", value)
+      else
+        content = tostring(value)
+      end
+      out = string.format("%s%s%s = %s\n", out, indent, name, content)
     end
   end
   return out

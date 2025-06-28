@@ -48,4 +48,8 @@ function Hex:as_vec()
   return Vec.new(self.y - mathx.floor(self.x / 2), self.x)
 end
 
+function Hex:distance(other)
+  return (self:as_vec() - other:as_vec()):length()
+end
+
 return Hex

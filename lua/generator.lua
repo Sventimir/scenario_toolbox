@@ -5,6 +5,7 @@ Map = require("scenario_toolbox/lua/map")
 Side = require("scenario_toolbox/lua/side")
 Scenario = require("scenario_toolbox/lua/scenario")
 Biome = require("scenario_toolbox/lua/biome")
+Item = require("scenario_toolbox/lua/item")
 
 GenHex = Hex:new()
 GenHex.__index = GenHex
@@ -95,6 +96,13 @@ Swamp.heights = {
   [2]  = "Hhd",
 }
 Swamp.forest = { probability = 3, "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fetd" }
+
+function Item:forsaken_altar(hex)
+  return self:new("altar-" .. hex.biome.name, hex, {
+                    image = "items/altar-evil.png",
+                    visible_in_fog = true
+  })
+end
 
 
 local function hex_height(hex)
@@ -188,7 +196,7 @@ function Gen:gen_biome_centers()
       table.insert(initials, all_hexes[i])
       table.insert(self.biome_centers, all_hexes[i])
       if x == 1 then
-        table.insert(self.altars, all_hexes[i])
+        table.insert(self.altars, Item:forsaken_altar(all_hexes[i]))
       end
       all_hexes[i].biome = biome
       table.remove(all_hexes, i)
@@ -204,9 +212,14 @@ function Gen:expand_biomes()
     local r = 1
     while #new_hexes > 0 do
       new_hexes = {}
-      for hex in center:circle(r) do
-        local valid_neighbours = as_table(filter(function(h) return h.biome.name == center.biome.name end, hex:circle(1)))
-        if mathx.random(0, r) < 2 * #valid_neighbours then
+      for hex in filter(function(h) return h.biome.name == "meadows" end, center:circle(r)) do
+        local valid_neighbours = as_table(
+          filter(
+            function(h) return h.biome.name == center.biome.name end,
+            hex:circle(1)
+          )
+        )
+        if hex:distance(self.center) > 3 and mathx.random(0, r) < 2 * #valid_neighbours then
           table.insert(new_hexes, hex)
           hex.biome = center.biome
         end
@@ -228,6 +241,27 @@ end
 
 function Gen:make(cfg)
   local s = Scenario:new(cfg:find("scenario", 1))
+  self.map = Map:new(cfg.width, cfg.height, Meadows)
+
+  self:height_map()
+  self:gen_biome_centers()
+  self:expand_biomes()
+  self:plant_forests()
+  
+  local potential_boss_locations = as_table(self.center:circle(cfg.width / 2 - 1))
+  self.boss_loc = potential_boss_locations[mathx.random(#potential_boss_locations)]
+  self.boss_loc.biome = Meadows
+  self:paint_circle(self.boss_loc, 3, Meadows)
+  
+  self.altar = Item:new("altar", self.center, { image = "items/altar.png", visible_in_fog = true })
+  for hex in self.map:iter() do
+    hex.terrain = hex.biome:terrain(hex)
+    if hex.forest then
+      hex.terrain = hex.terrain .. "^" .. hex.forest
+    end
+  end
+
+  s.map_data = self.map:as_map_data()
 
   for i = 1, cfg.player_count do
     local side = Side:new({
@@ -264,28 +298,12 @@ function Gen:make(cfg)
                team_user_name = "Boss1",
                defeat_condition = "never",
   }))
-
-  self.map = Map:new(cfg.width, cfg.height, Meadows)
-
-  self:height_map()
-  self:gen_biome_centers()
-  self:expand_biomes()
-  self:plant_forests()
-  
-  local potential_boss_locations = as_table(self.center:circle(cfg.width / 2 - 1))
-  self.boss_loc = potential_boss_locations[mathx.random(#potential_boss_locations)]
-  self.boss_loc.biome = Meadows
-  self:paint_circle(self.boss_loc, 3, Meadows)
-  
-
-  for hex in self.map:iter() do
-    hex.terrain = hex.biome:terrain(hex)
-    if hex.forest then
-      hex.terrain = hex.terrain .. "^" .. hex.forest
-    end
+  s:insert(self.altar:wml())
+  for altar in iter(self.altars) do
+    s:insert(altar:wml())
   end
 
-  s.map_data = self.map:as_map_data()
+
   return s
 end
 
