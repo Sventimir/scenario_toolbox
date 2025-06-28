@@ -41,6 +41,17 @@ function take(n, iter, state, ctrl)
   end
 end
 
+function take_while(f, iter)
+  return function()
+    local item = iter()
+    if f(item) then
+      return item
+    else
+      return nil
+    end
+  end
+end
+
 
 function drop(n, iter, state, ctrl)
   local s = { inter = state, ctrl = ctrl }
