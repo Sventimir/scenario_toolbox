@@ -1,8 +1,8 @@
 Biome = {}
 Biome.__index = Biome
 
-function Biome:new(name, symbol, terrain)
-  return setmetatable({ name = name, symbol = symbol, _terrain = terrain }, self)  
+function Biome:new(name)
+  return setmetatable({ name = name, hexes = {} }, self)
 end
 
 function Biome:terrain(hex)

@@ -4,7 +4,7 @@ Hex = {}
 Hex.__index = Hex
 
 function Hex:new(map, x, y, terrain)
-  return setmetatable({ map = map, x = x, y = y, terrain = terrain}, self)
+  return setmetatable({ map = map, x = x, y = y, terrain = terrain }, self)
 end
 
 function Hex:translate(v)

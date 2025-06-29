@@ -21,10 +21,6 @@ function GenHex:new(map, x, y, biome)
   }, self)
 end
 
-function GenHex:show_biome()
-  return self.biome.symbol
-end
-
 function GenHex:show_height()
   if not self.height then
     return "x"
@@ -47,7 +43,7 @@ GenHex.show = GenHex.show_biome
 
 Map.Hex = GenHex
 
-Meadows = Biome:new("meadows", "[38;5;34mM[0m", "Gg")
+Meadows = Biome:new("meadows")
 Meadows.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
@@ -57,7 +53,7 @@ Meadows.heights = {
 }
 Meadows.forest = { probability = 5, "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fet" }
 
-Forest = Biome:new("forest", "[38;5;10mF[0m", "Gll")
+Forest = Biome:new("forest")
 Forest.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
@@ -67,7 +63,7 @@ Forest.heights = {
 }
 Forest.forest = { probability = 9, "Fp" }
 
-Snow = Biome:new("snow", "[38;5;15mS[0m", "Dd")
+Snow = Biome:new("snow")
 Snow.heights = {
   [-2] = "Wo",
   [-1] = "Ai",
@@ -77,7 +73,7 @@ Snow.heights = {
 }
 Snow.forest = { probability = 3, "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Feta" }
 
-Desert = Biome:new("desert", "[38;5;11mD[0m", "Dd")
+Desert = Biome:new("desert")
 Desert.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
@@ -87,7 +83,7 @@ Desert.heights = {
 }
 Desert.forest = { probability = 2, "Ftd" }
 
-Swamp = Biome:new("swamp", "[38;5;2mB[0m", "Dd")
+Swamp = Biome:new("swamp")
 Swamp.heights = {
   [-2] = "Ww",
   [-1] = "Ss",
