@@ -52,4 +52,67 @@ function Hex:distance(other)
   return (self:as_vec() - other:as_vec()):length()
 end
 
+Hex.Set = {}
+Hex.Set.__index = Hex.Set
+
+function Hex.Set:new(hexes)
+  local this = setmetatable({}, self)
+  for hex in hexes or function() end do
+    this:add(hex)
+  end
+  return this
+end
+
+function Hex.Set:add(hex)
+  if self[hex.x] then
+    self[hex.x][hex.y] = hex
+  else
+    self[hex.x] = { [hex.y] = hex }
+  end
+end
+
+function Hex.Set:remove(hex)
+  if self[hex.x] then
+    self[hex.x][hex.y] = nil
+  end
+end
+
+function Hex.Set.member(hex)
+  if self[hex.x] then
+    return self[hex.x][hex.y] and true or false
+  else
+    return false
+  end
+end
+
+function Hex.Set:iter_rows()
+  local x, row = nil
+  return function()
+    x, row = next(self, x)
+    return row
+  end
+end
+
+function Hex.Set:iter()
+  local function iterate(row)
+    local i, item = nil
+    return function()
+      i, item = next(row, i)
+      return item
+    end
+  end
+  return join(map(iterate, self:iter_rows()))
+end
+
+function Hex.Set:empty()
+  for _ in self:iter() do
+    return false
+  end
+  return true
+end
+
+function Hex.Set:size()
+  return fold(arith.add, 0, map(function(_) return 1 end, self:iter()))
+end
+
 return Hex

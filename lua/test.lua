@@ -10,6 +10,14 @@ cfg = WML:new({
 })
 
 scenario = WML:new({ id = "example", name = "Example" })
+scenario:insert("time", WML:new({
+                    id = "first_watch",
+                    name = "First watch"
+}))
+scenario:insert("time", WML:new({
+                    id = "second_watch",
+                    name = "Second Watch"
+}))
 cfg:insert("scenario", scenario)
 
 m = Gen:make(cfg)

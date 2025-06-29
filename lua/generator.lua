@@ -11,14 +11,17 @@ GenHex = Hex:new()
 GenHex.__index = GenHex
 
 function GenHex:new(map, x, y, biome)
-  return setmetatable({
+  local this = setmetatable({
       map = map,
       x = x,
       y = y,
-      biome = biome,
       height = nil,
       terrain = "_off^_usr"
   }, self)
+  if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
+    biome:add_hex(this)
+  end
+  return this
 end
 
 function GenHex:show_height()
@@ -112,16 +115,6 @@ Gen = {
   altars = {},
 }
 
-function Gen:paint_circle(center, radius, biome, overwrite)
-  for d = 1, radius do
-    for hex in center:circle(d) do
-      if hex.biome._nil or overwrite then
-        hex.biome = biome
-      end
-    end
-  end
-end
-
 function Gen:border_height(hex)
   hex.height = - mathx.random(1, 2)
 end
@@ -191,7 +184,7 @@ function Gen:gen_biome_centers()
     local initials = {}
     for x = 1, count do
       local i = mathx.random(#all_hexes)
-      all_hexes[i].biome = biome
+      biome:add_hex(all_hexes[i])
       table.insert(initials, all_hexes[i])
       table.insert(self.biome_centers, all_hexes[i])
       if x == 1 then
@@ -222,7 +215,7 @@ function Gen:expand_biomes()
         )
         if hex:distance(self.center) > 3 and mathx.random(0, r) < 2 * #valid_neighbours then
           table.insert(new_hexes, hex)
-          hex.biome = center.biome
+          center.biome:add_hex(hex)
         end
       end
       if #new_hexes == 0 then
@@ -236,7 +229,7 @@ end
 function Gen:plant_forests()
   for hex in self.map:iter() do
     local neighbour_forest = fold(arith.add, 0, map(function(h) return h.forest and 1 or 0 end, hex:circle(1)))
-    local chance = hex.biome.forest.probability + neighbour_forest
+    local chance = hex.biome and hex.biome.forest.probability + neighbour_forest
     if hex.height >= 0 and hex.height < 2 and mathx.random(0, 9) < chance then
       hex.forest = hex.biome.forest[mathx.random(#hex.biome.forest)]
     end
@@ -261,7 +254,6 @@ function Gen:make(cfg)
     end
   end
   self.meadows_altar = potential_meadows_altar[mathx.random(#potential_meadows_altar)]
-  self:paint_circle(self.meadows_altar, 3, Meadows)
   table.insert(self.altars, Item:forsaken_altar(self.meadows_altar))
   
   self.altar = Item:new("altar", self.center, {
@@ -269,13 +261,19 @@ function Gen:make(cfg)
                           visible_in_fog = true
   })
   for hex in self.map:iter() do
-    hex.terrain = hex.biome:terrain(hex)
+    hex.terrain = hex.biome and hex.biome:terrain(hex) or "Wo"
     if hex.forest then
       hex.terrain = hex.terrain .. "^" .. hex.forest
     end
   end
 
   s.map_data = self.map:as_map_data()
+
+  local schedule = s:find("time")
+  s:insert(Meadows:time_area(iter(schedule)))
+  for biome in iter(self.biomes) do
+    s:insert(biome:time_area(iter(schedule)))
+  end
 
   for i = 1, cfg.player_count do
     local side = Side:new({
@@ -315,13 +313,7 @@ function Gen:make(cfg)
   s:insert(self.altar:wml())
   for altar in iter(self.altars) do
     s:insert(altar:wml())
-    s:insert("label", WML:new({
-               x = altar.hex.x,
-               y = altar.hex.y,
-               text = altar.hex.biome.name
-    }))
   end
-
 
   return s
 end

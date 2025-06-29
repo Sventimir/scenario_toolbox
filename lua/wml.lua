@@ -46,7 +46,7 @@ function WML:pretty_print(indent)
       else
         content = self:new(value[2]):pretty_print(indent .. "  ")
       end
-      out = string.format("%s%s[%s]\n%s[/%s]\n", out, indent, value[1], content, value[1])
+      out = string.format("%s%s[%s]\n%s%s[/%s]\n", out, indent, value[1], content, indent, value[1])
     else
       if type(value) == string then
         content = string.format("\"%s\"", value)

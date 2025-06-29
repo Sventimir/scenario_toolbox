@@ -154,6 +154,19 @@ function chain(...)
   end
 end
 
+-- Monadic join for iterators
+function join(it)
+  local current = it()
+  return function()
+    local ret = current and current()
+    while current and not ret do
+      current = it()
+      ret = current and current()
+    end
+    return ret
+  end
+end
+
 -- Returns the first item (if any) in the iterator that satisfies the predicate.
 function any(f, iter, state, ctrl)
   for item in iter, state, ctrl do
