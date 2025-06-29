@@ -185,6 +185,14 @@ function all(f, iter, state, ctrl)
   return true
 end
 
+function count(it, state, ctrl)
+  local total = 0
+  for _ in it, state, ctrl do
+    total = total + 1
+  end
+  return total
+end
+
 function get(key)
   return function(tbl)
     return tbl[key]

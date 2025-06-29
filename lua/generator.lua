@@ -42,9 +42,36 @@ function GenHex:show_coord()
   end
 end
 
+function GenHex:has_feature(name)
+  return self.feature and self.feature.name == name
+end
+
 GenHex.show = GenHex.show_biome
 
 Map.Hex = GenHex
+
+function village_mod(prob, hex)
+  if hex.height >= 0 then
+    if any(function(h) h:has_feature("village") end, hex:circle(1)) then
+      return Ratio.zero
+    else
+      return prob
+    end
+  else
+    return arith.Ratio.zero
+  end
+end
+
+function forest_mod(prob, hex)
+  if hex.height >= 0 then
+    local near_forests = count(
+      filter(function(h) return h:has_feature("forest") end, hex:circle(1))
+    )
+    return arith.Ratio:new(prob.num + near_forests, prob.denom)
+  else
+    return arith.Ratio.zero
+  end
+end
 
 Meadows = Biome:new("meadows")
 Meadows.heights = {
@@ -54,7 +81,14 @@ Meadows.heights = {
   [1]  = "Hh",
   [2]  = "Mm",
 }
-Meadows.forest = { probability = 5, "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fet" }
+Meadows:add_feat("village", arith.Ratio:new(1, 50), { "Vhr", "Vhhr" }, village_mod)
+Meadows:add_feat(
+  "forest",
+  arith.Ratio:new(1, 5),
+  { "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds",
+  "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fet" },
+  forest_mod
+)
 
 Forest = Biome:new("forest")
 Forest.heights = {
@@ -64,7 +98,7 @@ Forest.heights = {
   [1]  = "Hh",
   [2]  = "Md",
 }
-Forest.forest = { probability = 9, "Fp" }
+Forest:add_feat("forest", arith.Ratio:new(9, 10), { "Fp" }, forest_mod)
 
 Snow = Biome:new("snow")
 Snow.heights = {
@@ -74,7 +108,13 @@ Snow.heights = {
   [1]  = "Ha",
   [2]  = "Ms",
 }
-Snow.forest = { probability = 3, "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Feta" }
+Snow:add_feat("village", arith.Ratio:new(1, 100), { "Voa", "Vaa" }, village_mod)
+Snow:add_feat(
+  "forest",
+  arith.Ratio:new(3, 10), 
+  { "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Feta" },
+  forest_mod
+)
 
 Desert = Biome:new("desert")
 Desert.heights = {
@@ -84,7 +124,8 @@ Desert.heights = {
   [1]  = "Hd",
   [2]  = "Mdd",
 }
-Desert.forest = { probability = 2, "Ftd" }
+Desert:add_feat("village", arith.Ratio:new(1, 100), { "Vdt", "Vdr" }, village_mod)
+Desert:add_feat("forest", arith.Ratio:new(1, 5), { "Ftd" }, forest_mod)
 
 Swamp = Biome:new("swamp")
 Swamp.heights = {
@@ -94,7 +135,13 @@ Swamp.heights = {
   [1]  = "Sm",
   [2]  = "Hhd",
 }
-Swamp.forest = { probability = 3, "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fetd" }
+Swamp:add_feat("village", arith.Ratio:new(1, 100), { "Vhs" }, village_mod)
+Swamp:add_feat(
+  "forest",
+  arith.Ratio:new(1, 10),
+  { "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fetd" },
+  forest_mod
+)
 
 function Item:forsaken_altar(hex)
   return self:new("altar-" .. hex.biome.name, hex, {
@@ -226,16 +273,6 @@ function Gen:expand_biomes()
   end
 end
 
-function Gen:plant_forests()
-  for hex in self.map:iter() do
-    local neighbour_forest = fold(arith.add, 0, map(function(h) return h.forest and 1 or 0 end, hex:circle(1)))
-    local chance = hex.biome and hex.biome.forest.probability + neighbour_forest
-    if hex.height >= 0 and hex.height < 2 and mathx.random(0, 9) < chance then
-      hex.forest = hex.biome.forest[mathx.random(#hex.biome.forest)]
-    end
-  end
-end
-
 function Gen:make(cfg)
   local s = Scenario:new(cfg:find("scenario", 1))
   self.map = Map:new(cfg.width, cfg.height, Meadows)
@@ -243,7 +280,10 @@ function Gen:make(cfg)
   self:height_map()
   self:gen_biome_centers()
   self:expand_biomes()
-  self:plant_forests()
+  
+  for hex in self.map:iter() do
+    if hex.biome then hex.biome:apply_features(hex) end
+  end
   
   local potential_meadows_altar = {}
   for r = mathx.floor(cfg.width / 4), cfg.width / 2 do
@@ -262,9 +302,6 @@ function Gen:make(cfg)
   })
   for hex in self.map:iter() do
     hex.terrain = hex.biome and hex.biome:terrain(hex) or "Wo"
-    if hex.forest then
-      hex.terrain = hex.terrain .. "^" .. hex.forest
-    end
   end
 
   s.map_data = self.map:as_map_data()

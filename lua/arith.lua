@@ -59,4 +59,49 @@ function mod.mean(it, state, ctrl)
   end
 end
 
+function mod.gcd(a, b)
+  while a > 0 and b > 0 do
+    if a > b then
+      a = a % b
+    else
+      b = b % a
+    end
+  end
+  return mathx.max(a, b)
+end
+
+-- Ratios are mostly useful for random checks with some prescribed chance
+-- of success. Therefore no need to implement other arith operations.
+mod.Ratio = {}
+mod.Ratio.__index = mod.Ratio
+
+function mod.Ratio:new(num, denom)
+  local norm = mod.gcd(num, denom)
+  return setmetatable({ num = num // norm, denom = denom // norm }, self)
+end
+
+function mod.Ratio:__mul(other)
+  return self:new(self.num * other.num, self.denom * other.denom)
+end
+
+function mod.Ratio:inverse()
+  return self:new(self.denom, self.num)
+end
+
+function mod.Ratio:__div(other)
+  return self * other:inverse()
+end
+
+-- Make a probability test with chance of success equal to the ratio.
+-- Returns bool.
+function mod.Ratio:prob_check()
+  return mathx.random(self.denom) <= self.num
+end
+
+mod.Ratio.zero = mod.Ratio:new(0, 1)
+
+function mod.Ratio.zero:prob_check()
+  return false
+end
+
 return mod
