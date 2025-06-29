@@ -9,4 +9,8 @@ function Biome:terrain(hex)
   return self.heights[hex.height] or "_off^_usr"
 end
 
+function Biome:belongs(hex)
+  return hex.biome.name == self.name
+end
+
 return Biome

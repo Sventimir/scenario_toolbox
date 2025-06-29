@@ -184,12 +184,14 @@ function Gen:gen_biome_centers()
   for biome in iter(self.biomes) do
     local count = mathx.random(5 - dist, 7 - dist)
     local base_dist = dist * dist_unit
-    local all_hexes = as_table(chain(
-      table.unpack(as_table(map(
-        function(r) return self.center:circle(r - 1) end,
-        take_while(function(r) return r < max_radius end, drop(dist * dist_unit, arith.nats()))
-      ))))
-    )
+    local all_hexes = {}
+    for r = dist * dist_unit, max_radius do
+      for hex in self.center:circle(r) do
+        if hex.height > 0 then
+          table.insert(all_hexes, hex)
+        end
+      end
+    end
     local initials = {}
     for x = 1, count do
       local i = mathx.random(#all_hexes)
@@ -207,15 +209,18 @@ function Gen:gen_biome_centers()
 end
 
 function Gen:expand_biomes()
-  for center in iter(self.biome_centers) do
-    local new_hexes = { center }
-    local r = 1
-    while #new_hexes > 0 do
-      new_hexes = {}
-      for hex in filter(function(h) return h.biome.name == "meadows" end, center:circle(r)) do
+  local r = 1
+  while #self.biome_centers > 0 do
+    for center_idx, center in ipairs(self.biome_centers) do
+      local new_hexes = {}
+      local potential_hexes = filter(
+        function(hex) return Meadows:belongs(hex) end,
+        center:circle(r)
+      )
+      for hex in potential_hexes do
         local valid_neighbours = as_table(
           filter(
-            function(h) return h.biome.name == center.biome.name end,
+            function(h) return center.biome:belongs(h) end,
             hex:circle(1)
           )
         )
@@ -224,8 +229,11 @@ function Gen:expand_biomes()
           hex.biome = center.biome
         end
       end
-      r = r + 1
+      if #new_hexes == 0 then
+        table.remove(self.biome_centers, center_idx)
+      end
     end
+    r = r + 1
   end
 end
 
@@ -248,16 +256,17 @@ function Gen:make(cfg)
   self:expand_biomes()
   self:plant_forests()
   
-  local potential_boss_locations = as_table(
-    filter(
-      function(hex) return hex.biome.name == "meadows" end,
-      self.center:circle(cfg.width / 2 - 1)
-    )
-  )
-  self.boss_loc = potential_boss_locations[mathx.random(#potential_boss_locations)]
-  self.boss_loc.biome = Meadows
-  self:paint_circle(self.boss_loc, 3, Meadows)
-  table.insert(self.altars,Item:forsaken_altar(self.boss_loc))
+  local potential_meadows_altar = {}
+  for r = mathx.floor(cfg.width / 4), cfg.width / 2 do
+    for hex in self.center:circle(r) do
+      if hex.height > 0 and Meadows:belongs(hex) then
+        table.insert(potential_meadows_altar, hex)
+      end
+    end
+  end
+  self.meadows_altar = potential_meadows_altar[mathx.random(#potential_meadows_altar)]
+  self:paint_circle(self.meadows_altar, 3, Meadows)
+  table.insert(self.altars, Item:forsaken_altar(self.meadows_altar))
   
   self.altar = Item:new("altar", self.center, {
                           image = "items/altar.png",
