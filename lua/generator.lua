@@ -193,12 +193,12 @@ function Gen:gen_biome_centers()
     local initials = {}
     for x = 1, count do
       local i = mathx.random(#all_hexes)
+      all_hexes[i].biome = biome
       table.insert(initials, all_hexes[i])
       table.insert(self.biome_centers, all_hexes[i])
       if x == 1 then
         table.insert(self.altars, Item:forsaken_altar(all_hexes[i]))
       end
-      all_hexes[i].biome = biome
       table.remove(all_hexes, i)
     end
 
@@ -248,12 +248,21 @@ function Gen:make(cfg)
   self:expand_biomes()
   self:plant_forests()
   
-  local potential_boss_locations = as_table(self.center:circle(cfg.width / 2 - 1))
+  local potential_boss_locations = as_table(
+    filter(
+      function(hex) return hex.biome.name == "meadows" end,
+      self.center:circle(cfg.width / 2 - 1)
+    )
+  )
   self.boss_loc = potential_boss_locations[mathx.random(#potential_boss_locations)]
   self.boss_loc.biome = Meadows
   self:paint_circle(self.boss_loc, 3, Meadows)
+  table.insert(self.altars,Item:forsaken_altar(self.boss_loc))
   
-  self.altar = Item:new("altar", self.center, { image = "items/altar.png", visible_in_fog = true })
+  self.altar = Item:new("altar", self.center, {
+                          image = "items/altar.png",
+                          visible_in_fog = true
+  })
   for hex in self.map:iter() do
     hex.terrain = hex.biome:terrain(hex)
     if hex.forest then
@@ -301,6 +310,11 @@ function Gen:make(cfg)
   s:insert(self.altar:wml())
   for altar in iter(self.altars) do
     s:insert(altar:wml())
+    s:insert("label", WML:new({
+               x = altar.hex.x,
+               y = altar.hex.y,
+               text = altar.hex.biome.name
+    }))
   end
 
 
