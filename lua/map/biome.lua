@@ -1,4 +1,4 @@
-local Hex = require("scenario_toolbox/lua/hex")
+local Hex = require("scenario_toolbox/lua/map/hex")
 
 local Biome = {}
 Biome.__index = Biome

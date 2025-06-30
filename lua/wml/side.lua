@@ -1,4 +1,4 @@
-WML = require("scenario_toolbox/lua/wml")
+local WML = require("scenario_toolbox/lua/wml/wml")
 
 local Side = WML:new({
     controller = "human",

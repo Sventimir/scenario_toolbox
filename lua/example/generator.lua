@@ -1,11 +1,11 @@
-Vec = require("scenario_toolbox/lua/cubic_vector")
-CartVec = require("scenario_toolbox/lua/carthesian_vector")
-Hex = require("scenario_toolbox/lua/hex")
-Map = require("scenario_toolbox/lua/map")
-Side = require("scenario_toolbox/lua/side")
-Scenario = require("scenario_toolbox/lua/scenario")
-Biome = require("scenario_toolbox/lua/biome")
-Item = require("scenario_toolbox/lua/item")
+Vec = require("scenario_toolbox/lua/map/cubic_vector")
+CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
+Hex = require("scenario_toolbox/lua/map/hex")
+Map = require("scenario_toolbox/lua/map/map")
+Biome = require("scenario_toolbox/lua/map/biome")
+Side = require("scenario_toolbox/lua/wml/side")
+Scenario = require("scenario_toolbox/lua/wml/scenario")
+Item = require("scenario_toolbox/lua/wml/item")
 
 GenHex = Hex:new()
 GenHex.__index = GenHex
@@ -299,7 +299,7 @@ function Gen:place_encampments()
   local hexes = as_table(
     filter(
       function(h) return h.biome end,
-      chain(self.center:circle(3), self.center:circle(4), self.center:circle(5))
+      chain(self.center:circle(2), self.center:circle(3))
     )
   )
   self:encampment(hexes[mathx.random(#hexes)])
@@ -319,7 +319,6 @@ function Gen:place_encampments()
         take_while(function(d) return d < max_dist end, drop(min_dist, arith.nats()))
       )
     )
-    print(#hexes)
     if #hexes > 0 then
       self:encampment(hexes[mathx.random(#hexes)])
     end

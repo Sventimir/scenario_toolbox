@@ -1,6 +1,6 @@
-require("scenario_toolbox/lua/core")
+require("scenario_toolbox/lua/lib/core")
 
-Vec = {}
+local Vec = {}
 Vec.__index = Vec
 
 function Vec.new(s, se)

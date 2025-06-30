@@ -214,5 +214,5 @@ function keys(t)
   return keys
 end
 
-arith = require("scenario_toolbox/lua/arith")
-str = require("scenario_toolbox/lua/str")
+arith = require("scenario_toolbox/lua/lib/arith")
+str = require("scenario_toolbox/lua/lib/str")

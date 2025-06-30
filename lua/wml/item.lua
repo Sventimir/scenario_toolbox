@@ -1,6 +1,6 @@
-local WML = require("scenario_toolbox/lua/wml")
+local WML = require("scenario_toolbox/lua/wml/wml")
 
-Item = {}
+local Item = {}
 Item.__index = Item
 
 function Item:new(name, hex, props)

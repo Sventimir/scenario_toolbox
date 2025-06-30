@@ -1,4 +1,4 @@
-Map = { Hex = require("scenario_toolbox/lua/hex") }
+local Map = { Hex = require("scenario_toolbox/lua/map/hex") }
 Map.__index = Map
 
 function Map:new(width, height, terrain)

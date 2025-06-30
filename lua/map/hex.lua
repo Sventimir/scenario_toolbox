@@ -1,6 +1,6 @@
-local Vec = require("scenario_toolbox/lua/cubic_vector")
+local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 
-Hex = {}
+local Hex = {}
 Hex.__index = Hex
 
 function Hex:new(map, x, y, terrain)

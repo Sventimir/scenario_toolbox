@@ -1,4 +1,4 @@
-WML = {}
+local WML = {}
 
 function WML:new(wml)
   local this = wml or {}
