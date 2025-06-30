@@ -103,6 +103,18 @@ end
 
 local eigenvector_names = { [0] = "n", "ne", "se", "s", "sw", "nw" }
 
+function Vec.unitary:each()
+  local i = -1
+  return function()
+    i = i + 1
+    if i < 6 then
+      return Vec.unitary[eigenvector_names[i]]
+    else
+      return nil
+    end
+  end
+end
+
 function Vec.unitary.random()
   return Vec.unitary[eigenvector_names[mathx.random(0, 5)]]
 end

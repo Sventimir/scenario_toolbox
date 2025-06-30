@@ -63,7 +63,7 @@ function village_mod(prob, hex)
 end
 
 function forest_mod(prob, hex)
-  if hex.height >= 0 then
+  if hex.height >= 0  and hex.height < 2 then
     local near_forests = count(
       filter(function(h) return h:has_feature("forest") end, hex:circle(1))
     )
@@ -89,6 +89,8 @@ Meadows:add_feat(
   "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fet" },
   forest_mod
 )
+Meadows.keep = "Ker"
+Meadows.camp = "Cer"
 
 Forest = Biome:new("forest")
 Forest.heights = {
@@ -99,6 +101,8 @@ Forest.heights = {
   [2]  = "Md",
 }
 Forest:add_feat("forest", arith.Ratio:new(9, 10), { "Fp" }, forest_mod)
+Forest.keep = "Kv"
+Forest.camp = "Cv"
 
 Snow = Biome:new("snow")
 Snow.heights = {
@@ -115,6 +119,8 @@ Snow:add_feat(
   { "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Feta" },
   forest_mod
 )
+Snow.keep = "Koa"
+Snow.camp = "Coa"
 
 Desert = Biome:new("desert")
 Desert.heights = {
@@ -126,6 +132,8 @@ Desert.heights = {
 }
 Desert:add_feat("village", arith.Ratio:new(1, 100), { "Vdt", "Vdr" }, village_mod)
 Desert:add_feat("forest", arith.Ratio:new(1, 5), { "Ftd" }, forest_mod)
+Desert.keep = "Kdr"
+Desert.camp = "Cdr"
 
 Swamp = Biome:new("swamp")
 Swamp.heights = {
@@ -142,6 +150,8 @@ Swamp:add_feat(
   { "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fetd" },
   forest_mod
 )
+Swamp.keep = "Khs"
+Swamp.camp = "Chs"
 
 function Item:forsaken_altar(hex)
   return self:new("altar-" .. hex.biome.name, hex, {
@@ -273,6 +283,50 @@ function Gen:expand_biomes()
   end
 end
 
+function Gen:encampment(hex)
+  local v = Vec.unitary.random()
+  local rotations = { Vec.unitary.clockwise, Vec.unitary.counterclockwise }
+  local camp = { hex:translate(v), hex:translate(rotations[mathx.random(2)](v)) }
+  hex.terrain = hex.biome.keep
+  for h in iter(camp) do
+    h.biome = nil
+    h.terrain = hex.biome.camp
+  end
+  hex.biome = nil
+end
+
+function Gen:place_encampments()
+  local hexes = as_table(
+    filter(
+      function(h) return h.biome end,
+      chain(self.center:circle(3), self.center:circle(4), self.center:circle(5))
+    )
+  )
+  self:encampment(hexes[mathx.random(#hexes)])
+
+  local dim = mathx.min(self.map.height, self.map.width)
+  local min_dist = mathx.max(dim / 5, 5)
+  local max_dist = dim / 2 - 5
+  for v in Vec.unitary.each() do
+    hexes = as_table(
+      filter_map(
+        function(d)
+          local h = self.center:translate(v:scale(d))
+          return h.biome and h ~= self.meadows_altar
+            and all(function(a) return a.hex ~= h end, iter(self.altars))
+            and h
+        end,
+        take_while(function(d) return d < max_dist end, drop(min_dist, arith.nats()))
+      )
+    )
+    print(#hexes)
+    if #hexes > 0 then
+      self:encampment(hexes[mathx.random(#hexes)])
+    end
+  end
+
+end
+
 function Gen:make(cfg)
   local s = Scenario:new(cfg:find("scenario", 1))
   self.map = Map:new(cfg.width, cfg.height, Meadows)
@@ -303,6 +357,8 @@ function Gen:make(cfg)
   for hex in self.map:iter() do
     hex.terrain = hex.biome and hex.biome:terrain(hex) or "Wo"
   end
+
+  self:place_encampments()
 
   s.map_data = self.map:as_map_data()
 
