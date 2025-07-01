@@ -1,3 +1,4 @@
+local WML = require("scenario_toolbox/lua/wml/wml")
 local Map = { Hex = require("scenario_toolbox/lua/map/hex") }
 Map.__index = Map
 
@@ -94,7 +95,7 @@ function Map:labels_wml()
   return map(
     function(hex)
       if hex.label then
-        return { "label", { x = hex.x, y = hex.y, text = hex.label } }
+        return WML:tag("label", { x = hex.x, y = hex.y, text = hex.label })
       end
     end,
     self:iter()
