@@ -6,6 +6,7 @@ Biome = require("scenario_toolbox/lua/map/biome")
 Side = require("scenario_toolbox/lua/wml/side")
 Scenario = require("scenario_toolbox/lua/wml/scenario")
 Item = require("scenario_toolbox/lua/wml/item")
+Spawn = require("scenario_toolbox/lua/units/spawn")
 
 GenHex = Hex:new()
 GenHex.__index = GenHex
@@ -43,7 +44,7 @@ function GenHex:show_coord()
 end
 
 function GenHex:has_feature(name)
-  return self.feature and self.feature.name == name
+  return self.feature and (not name or self.feature.name == name)
 end
 
 GenHex.show = GenHex.show_biome
@@ -91,6 +92,10 @@ Meadows:add_feat(
 )
 Meadows.keep = "Ker"
 Meadows.camp = "Cer"
+Meadows.spawn = {
+  passive = { "Giant Rat", "Piglet", "Woodland Boar", "Rock", "Bay Horse", "Wolf" },
+  active = { "Cave Bear", "Woodland Boar", "Wolf" }
+}
 
 Forest = Biome:new("forest")
 Forest.heights = {
@@ -359,6 +364,12 @@ function Gen:make(cfg)
 
   self:place_encampments()
 
+  local starting_positions = as_table(filter(function(h) return h.biome end, self.center:circle(1)))
+  for i = 1, cfg.player_count do
+    local hex = table.remove(starting_positions, mathx.random(#starting_positions))
+    hex.terrain = string.format("%i %s", i, hex.terrain)
+  end
+
   s.map_data = self.map:as_map_data()
 
   local schedule = s:find("time")
@@ -371,8 +382,8 @@ function Gen:make(cfg)
     local side = Side:new({
         side = i,
         color = self.side_color[i],
-        faction = "Custom",
-        faction_lock = true,
+        -- faction = "Random",
+        faction_lock = false,
         leader_lock = false,
         fog = true,
         shroud = true,

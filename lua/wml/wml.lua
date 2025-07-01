@@ -8,6 +8,12 @@ function WML:new(wml)
   return this
 end
 
+function WML:tag(name, content)
+  local this = WML:new()
+  this:insert(name, content)
+  return this
+end
+
 function WML:find(tag, index)
   local res = {}
   local i = 1
@@ -32,8 +38,18 @@ function WML:find(tag, index)
   end
 end
 
+function WML:merge(wml)
+  for k, v in pairs(wml) do
+    if type(k) == "number" then
+      table.insert(self, v)
+    else
+      self[k] = v
+    end
+  end
+end
+
 function WML:insert(tag, value)
-  table.insert(self, {tag, value})
+  table.insert(self, {tag, WML:new(value)})
 end
 
 function WML:pretty_print(indent)

@@ -3,6 +3,7 @@ require("scenario_toolbox/lua/lib/core")
 WML = require("scenario_toolbox/lua/wml/wml")
 Gen = require("scenario_toolbox/lua/example/generator")
 
+
 cfg = WML:new({
     width = 30,
     height = 30,
