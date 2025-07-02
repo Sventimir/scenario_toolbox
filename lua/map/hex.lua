@@ -1,10 +1,25 @@
 local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 
 local Hex = {}
-Hex.__index = Hex
 
 function Hex:new(map, x, y, terrain)
-  return setmetatable({ map = map, x = x, y = y, terrain = terrain }, self)
+  local this = setmetatable({ map = map, x = x, y = y, terrain = terrain }, self)
+  self.__index = self
+  return this
+end
+
+function Hex:from_wesnoth(hex)
+
+  function hex:translate(v)
+    return Hex:from_wesnoth(wesnoth.map.get(v:translate(self.x, self.y)))
+  end
+
+  hex.circle = Hex.circle
+  hex.as_vec = Hex.as_vec
+  hex.distance = Hex.distance
+  hex.__tostring = Hex.__tostring
+
+  return hex
 end
 
 function Hex:translate(v)
@@ -21,27 +36,6 @@ end
 
 function Hex:__tostring()
   return string.format("(%d, %d)[%s]", self.x, self.y, self.terrain)
-end
-
-function Hex:on_border()
-  local dir = ""
-  if self.x == 0 then
-    dir = "n"
-  end
-  if self.x == self.map.width + 1 then
-    dir = "s"
-  end
-  if self.y == 0 then
-    dir = dir .. "w"
-  end
-  if self.y == self.map.height + 1 then
-    dir = dir .. "e"
-  end
-  if dir == "" then
-    return nil
-  else
-    return dir
-  end
 end
 
 function Hex:as_vec()
