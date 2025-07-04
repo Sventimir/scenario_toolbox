@@ -8,4 +8,12 @@ local Side = WML:new({
 })
 Side.__index = Side
 
+function Side:var(name, value)
+  local vs = self:find("variables", 1)
+  if not vs then
+    vs = self:insert("variables", {})
+  end
+  vs[name] = value
+end
+
 return Side

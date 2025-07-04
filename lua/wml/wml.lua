@@ -49,7 +49,9 @@ function WML:merge(wml)
 end
 
 function WML:insert(tag, value)
-  table.insert(self, {tag, WML:new(value)})
+  local contents = WML:new(value)
+  table.insert(self, {tag, contents})
+  return contents
 end
 
 function WML:pretty_print(indent)

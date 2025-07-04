@@ -9,8 +9,23 @@ function Spawn:new(unit_type)
   return setmetatable(this, self)
 end
 
-function Spawn:place(hex)
-  return WML:tag("unit", { type = self.unit_type, x = hex.x, y = hex.y })
+function Spawn:placement(hex, side)
+  return iter({ { type = self.unit_type, side = side, x = hex.x, y = hex.y } })
+end
+
+function Spawn:wml(hex, side)
+  return WML:new(as_table(map(function(t) return WML:tag("unit", t) end, self:placement(hex, side))))
+end
+
+function Spawn:spawn(hex, side)
+  local animation = wesnoth.units.create_animator()
+  for _, desc in self:placement(hex, side) do
+    local u = wesnoth.units.create(desc)
+    animation:add(u, "recruited", "")
+    wesnoth.units.to_map(u)
+  end
+  wesnoth.interface.scroll_to_hex(hex.x, hex.y, true, false, true)
+  animation:run()
 end
 
 function Spawn:wolf_pack(unit_type, min_size, max_size)
@@ -18,15 +33,15 @@ function Spawn:wolf_pack(unit_type, min_size, max_size)
    this.min_size = min_size or 3
    this.max_size = max_size or 6
 
-   function this:place(hex)
-     local size = mathx.random(self.min_size, self.max_size)
-     local units = WML:new()
+   function this:placement(hex, side)
      local hexes = as_table(chain(iter({ hex }), hex:circle(1)))
-     for i = 1, size do
-       local h = table.remove(hexes, mathx.random(#hexes))
-       units:insert("unit", { type = self.unit_type, x = h.x, y = h.y })
-     end
-     return units
+     return repeatedly(
+       function()
+         local h = table.remove(hexes, mathx.random(#hexes))
+         return { type = self.unit_type, side = side, x = h.x, y = h.y }
+       end,
+       mathx.random(self.min_size, self.max_size)
+     )
    end
 
    return this
@@ -38,17 +53,18 @@ function Spawn:family(parent_type, child_type, min_size, max_size)
   this.min_size = min_size or 1
   this.max_size = max_size or 6
 
-  function this:place(hex)
-    local size = mathx.random(self.min_size, self.max_size)
-    local units = Spawn.place(self, hex)
+  function this:placement(hex)
     local hexes = as_table(hex:circle(1))
-
-    for i = 1, size do
-      local h = table.remove(hexes, mathx.random(#hexes))
-      units:insert("unit", { type = self.child_type, x = h.x, y = h.y })
-    end
-
-    return units
+    return chain(
+      iter({ Spawn.placement(self, hex) }),
+      repeatedly(
+        function()
+          local h = table.remove(hexes, mathx.random(#hexes))
+          return { type = self.child_type, x = h.x, y = h.y }
+        end,
+        mathx.random(self.min_size, self.max_size)
+      )
+    )
   end
 
   return this

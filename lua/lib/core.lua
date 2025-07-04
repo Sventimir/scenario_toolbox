@@ -154,6 +154,14 @@ function chain(...)
   end
 end
 
+function repeatedly(f, times)
+  return function(state, i)
+    if not state.times or i <= state.times then
+      return i + 1, state.action(i)
+    end
+  end, { action = f, times = times }, 1
+end
+
 -- Monadic join for iterators
 function join(it)
   local current = it()

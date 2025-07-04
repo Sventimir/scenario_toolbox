@@ -392,12 +392,11 @@ function Gen:make(cfg)
         income = 0,
         save_id = "player" .. i,
         team_name = "Bohaterowie",
-        team_user_name = "Bohaterowie",
         defeat_condition = "never",
     })
     s:insert("side", side)
   end
-  s:insert("side", Side:new({
+  boss = Side:new({
                side = cfg.player_count + 1,
                color = "black",
                faction = "Custom",
@@ -410,13 +409,23 @@ function Gen:make(cfg)
                hidden = true,
                income = 0,
                team_name = "Boss1",
-               team_user_name = "Boss1",
                defeat_condition = "never",
-  }))
+  })
+  boss:var("altar_x", self.meadows_altar.x)
+  boss:var("altar_y", self.meadows_altar.y)
+  s:insert("side", boss)
   s:insert(self.altar:wml())
   for altar in iter(self.altars) do
     s:insert(altar:wml())
   end
+
+  s:insert("event", {
+             name = "preload",
+             id = "preload",
+             {"lua", WML:new({
+                  code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
+             })}
+  })
 
   return s
 end
