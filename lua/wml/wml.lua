@@ -1,9 +1,10 @@
-local WML = {}
+local WML = { __wml = true }
 
 function WML:new(wml)
   local this = wml or {}
-  this.__wml = true
-  setmetatable(this, self)
+  if not this.__wml_tag then
+    setmetatable(this, self)
+  end
   self.__index = self
   return this
 end
@@ -47,8 +48,13 @@ function WML:merge(wml)
 end
 
 function WML:insert(tag, value)
-  local contents = WML:new(value)
-  table.insert(self, {tag, contents})
+  local contents
+  if tag.__wml_tag then
+    contents = tag
+  else
+    contents = WML:tag(tag, value)
+  end
+  table.insert(self, contents)
   return contents
 end
 
@@ -76,7 +82,35 @@ function WML:__tostring()
   return self:pretty_print("")
 end
 
-WML.Tag = {}
+function WML:clone()
+  local result = WML:new()
+  for k, v in pairs(self) do
+    result[k] = v
+  end
+  return result
+end
+
+function WML:__band(other)
+  local result = self:clone()
+  if other.__wml_tag then
+    result:insert(other)
+  else
+    result:merge(other)
+  end
+  return result
+end
+
+function WML:__bor(other)
+  local result = self:clone()
+  result:insert(WML:tag("or", other))
+  return result
+end
+
+function WML:__bnot()
+  return WML:tag("not", self)
+end
+
+WML.Tag = { __wml = true, __wml_tag = true }
 WML.Tag.__index = WML.Tag
 
 function WML.Tag:new(name, content)
@@ -102,7 +136,7 @@ end
 function WML.Tag:pretty_print(indent)
   return string.format("%s[%s]\n%s%s[/%s]\n",
                        indent,
-                       self[1],
+                        self[1],
                        self[2]:pretty_print("  " .. indent),
                        indent,
                        self[1]
@@ -111,6 +145,18 @@ end
 
 function WML.Tag:__tostring()
   return self:pretty_print("")
+end
+
+function WML.Tag:__bnot()
+  return WML.Tag:new("not", WML:new({ self }))
+end
+
+function WML.Tag:__band(other)
+  return WML:new({ self }) & other
+end
+
+function WML.Tag:__bor(other)
+  return WML:new({ self }) | other
 end
 
 return WML
