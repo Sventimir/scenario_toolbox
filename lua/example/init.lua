@@ -50,19 +50,19 @@ function inactive_spawn_filter(biome, side)
   )
   return WML:new({
       area = biome.name,
-      WML:tag("not", {
-                WML:tag("have_location", {
-                          radius = 5,
-                          WML:tag("or", {
-                                    WML:tag("filter", {}),
-                                    owner_side = other_sides,
-                          })
-                }),
-      }),
       WML:tag("filter_vision", {
                 visible = false,
                 respect_fog = true,
                 side = other_sides,
+      }),
+      WML:tag("not", {
+                WML:tag("and", {
+                          WML:tag("filter", {}),
+                          WML:tag("or", {
+                                    owner_side = string.format("%i,%s", side, other_sides)
+                          }),
+                }),
+                radius = 5,
       })
   })
 end

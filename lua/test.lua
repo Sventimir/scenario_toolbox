@@ -8,18 +8,19 @@ cfg = WML:new({
     width = 30,
     height = 30,
     player_count = 2,
+    WML:tag("scenario", {
+              id = "example",
+              name = "Example",
+              WML:tag("time", {
+                        id = "first_watch",
+                        name = "First watch",
+              }),
+              WML:tag("time", {
+                        id = "second_watch",
+                        name = "Second watch",
+              }),
+    })
 })
-
-scenario = WML:new({ id = "example", name = "Example" })
-scenario:insert("time", WML:new({
-                    id = "first_watch",
-                    name = "First watch"
-}))
-scenario:insert("time", WML:new({
-                    id = "second_watch",
-                    name = "Second Watch"
-}))
-cfg:insert("scenario", scenario)
 
 m = Gen:make(cfg)
 
