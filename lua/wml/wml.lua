@@ -9,7 +9,7 @@ function WML:new(wml)
 end
 
 function WML:tag(name, content)
-  return WML:new({ name, content })
+  return WML.Tag:new(name, content)
 end
 
 function WML:find(tag, index)
@@ -56,13 +56,10 @@ function WML:pretty_print(indent)
   local out = ""
   for name, value in pairs(self) do
     if string.sub(name, 1, 2) == "__" then
+    elseif type(value) == "table" and value.pretty_print then
+      out = string.format("%s%s", out, value:pretty_print(indent))
     elseif tonumber(name) then
-      if value[2].__wml then
-        content = value[2]:pretty_print(indent .. "  ")
-      else
-        content = self:new(value[2]):pretty_print(indent .. "  ")
-      end
-      out = string.format("%s%s[%s]\n%s%s[/%s]\n", out, indent, value[1], content, indent, value[1])
+      out = string.format("%s%s", out, WML.Tag:new(value[1], value[2]):pretty_print(indent))
     else
       if type(value) == string then
         content = string.format("\"%s\"", value)
@@ -76,6 +73,43 @@ function WML:pretty_print(indent)
 end
 
 function WML:__tostring()
+  return self:pretty_print("")
+end
+
+WML.Tag = {}
+WML.Tag.__index = WML.Tag
+
+function WML.Tag:new(name, content)
+  return setmetatable(WML:new({ name, WML:new(content) }), WML.Tag)
+end
+
+function WML.Tag:find(tag, index)
+  return self[2]:find(tag, index)
+end
+
+function WML.Tag:merge(wml)
+  setmetatable(self, WML)
+  local name = table.remove(self, 1)
+  local contents = table.remove(self, 2)
+  self[1] = WML.Tag:new(name, content)
+  self:merge(wml)
+end
+
+function WML.Tag:insert(tag, content)
+  self[2]:insert(tag, content)
+end
+
+function WML.Tag:pretty_print(indent)
+  return string.format("%s[%s]\n%s%s[/%s]\n",
+                       indent,
+                       self[1],
+                       self[2]:pretty_print("  " .. indent),
+                       indent,
+                       self[1]
+  )
+end
+
+function WML.Tag:__tostring()
   return self:pretty_print("")
 end
 
