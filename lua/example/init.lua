@@ -1,8 +1,29 @@
 wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 local Hex = require("scenario_toolbox/lua/map/hex")
+local WML = require("scenario_toolbox/lua/wml/wml")
+
+require("scenario_toolbox/lua/example/biomes")
 
 local boss1 = wesnoth.sides.find({ team_name = "Boss1" })[1]
+
+wesnoth.game_events.add({
+    name = "prestart",
+    id = "initial-spawn",
+    action = function()
+      local spawns = {
+        Spawn:wolf_pack("Wolf", 2, 4),
+        Spawn:family("Woodland Boar", "Piglet", 2, 4),
+        Spawn:new("Giant Rat"),
+        Spawn:new("Bay Horse"),
+      }
+      local available_hexes = wesnoth.map.find(inactive_spawn_filter(Meadows, boss1.side))
+      while #available_hexes > 0 do
+        local hex = available_hexes[mathx.random(#available_hexes)]
+        spawns[mathx.random(#spawns)]:spawn(hex, boss1.side)
+      end
+    end
+})
 
 wesnoth.game_events.add({
     name = string.format("side %s turn", boss1.side),
@@ -14,3 +35,33 @@ wesnoth.game_events.add({
       Spawn:wolf_pack("Wolf", 3, 6):spawn(altar, boss1.side)
     end
 })
+
+function inactive_spawn_filter(biome, side)
+  local other_sides = fold(
+    function(acc, s)
+      if acc == "" then
+        return tostring(s.side)
+      else
+        return string.format("%s,%i", acc, s.side)
+      end
+    end,
+    "",
+    iter(wesnoth.sides.find({ WML:tag("not", { side = side }) }))
+  )
+  return WML:new({
+      area = biome.name,
+      include_borders = false,
+      WML:tag("not", {
+                radius = 5,
+                WML:tag("or", {
+                          WML:tag("filter", {}),
+                          owner_side = other_sides,
+                })
+      }),
+      WML:tag("filter_vision", {
+                visible = false,
+                respect_fog = true,
+                side = other_sides,
+      })
+  })
+end

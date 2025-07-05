@@ -9,9 +9,7 @@ function WML:new(wml)
 end
 
 function WML:tag(name, content)
-  local this = WML:new()
-  this:insert(name, content)
-  return this
+  return WML:new({ name, content })
 end
 
 function WML:find(tag, index)
