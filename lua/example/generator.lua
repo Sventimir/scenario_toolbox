@@ -222,7 +222,39 @@ function Gen:place_encampments()
       self:encampment(hexes[mathx.random(#hexes)])
     end
   end
+end
 
+function Gen:initial_spawn(biome, side)
+  local wml = WML:new()
+  local available_hexes = Hex.Set:new(biome.hexes:iter())
+  local spawns = {
+    Spawn:wolf_pack("Wolf", 2, 4),
+    Spawn:family("Woodland Boar", "Piglet", 2, 4),
+    Spawn:new("Giant Rat"),
+    Spawn:new("Bay Horse"),
+  }
+
+  -- for unit in iter(scenario:find("unit")) do
+  --   local hex = self.map:get(unit.x, unit.y)
+  --   avaliable_hexes:remove(hex)
+  --   for h in hex:circle(1) do
+  --     available_hexes:remove(h)
+  --   end
+  -- end
+
+  while available_hexes.size > 0 do
+    local hex = available_hexes:random()
+    available_hexes:remove(hex)
+    local s = spawns[mathx.random(#spawns)]:wml(hex, side)
+    wml:merge(s)
+    for r = 1, 5 do
+      for h in hex:circle(r) do
+        available_hexes:remove(h)
+      end
+    end
+  end
+
+  return wml
 end
 
 function Gen:make(cfg)
@@ -312,6 +344,8 @@ function Gen:make(cfg)
   for altar in iter(self.altars) do
     s:insert(altar:wml())
   end
+
+  boss:merge(self:initial_spawn(Meadows, boss.side))
 
   s:insert("event", {
              name = "preload",

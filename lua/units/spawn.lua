@@ -14,7 +14,16 @@ function Spawn:placement(hex, side)
 end
 
 function Spawn:wml(hex, side)
-  return WML:new(as_table(map(function(t) return WML:tag("unit", t) end, self:placement(hex, side))))
+  return WML:new(
+    as_table(
+      map(
+        function(t)
+          return WML:tag("unit", t)
+        end,
+        self:placement(hex, side)
+      )
+    )
+  )
 end
 
 function Spawn:spawn(hex, side)
@@ -37,8 +46,12 @@ function Spawn:wolf_pack(unit_type, min_size, max_size)
      local hexes = as_table(chain(iter({ hex }), hex:circle(1)))
      return repeatedly(
        function()
-         local h = table.remove(hexes, mathx.random(#hexes))
-         return { type = self.unit_type, side = side, x = h.x, y = h.y }
+         if #hexes > 0 then
+           local h = table.remove(hexes, mathx.random(#hexes))
+           return { type = self.unit_type, side = side, x = h.x, y = h.y }
+         else
+           return nil
+         end
        end,
        mathx.random(self.min_size, self.max_size)
      )
@@ -53,14 +66,18 @@ function Spawn:family(parent_type, child_type, min_size, max_size)
   this.min_size = min_size or 1
   this.max_size = max_size or 6
 
-  function this:placement(hex)
+  function this:placement(hex, side)
     local hexes = as_table(hex:circle(1))
     return chain(
-      iter({ Spawn.placement(self, hex) }),
+      Spawn.placement(self, hex, side),
       repeatedly(
         function()
-          local h = table.remove(hexes, mathx.random(#hexes))
-          return { type = self.child_type, x = h.x, y = h.y }
+          if #hexes > 0 then
+            local h = table.remove(hexes, mathx.random(#hexes))
+            return { type = self.child_type, side = side, x = h.x, y = h.y }
+          else
+            return nil
+          end
         end,
         mathx.random(self.min_size, self.max_size)
       )

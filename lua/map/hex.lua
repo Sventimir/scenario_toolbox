@@ -51,6 +51,7 @@ Hex.Set.__index = Hex.Set
 
 function Hex.Set:new(hexes)
   local this = setmetatable({}, self)
+  this.size = 0
   for hex in hexes or function() end do
     this:add(hex)
   end
@@ -63,12 +64,21 @@ function Hex.Set:add(hex)
   else
     self[hex.x] = { [hex.y] = hex }
   end
+  self.size = self.size + 1
 end
 
 function Hex.Set:remove(hex)
   if self[hex.x] then
+    if self[hex.x][hex.y] then
+      self.size = self.size - 1
+    end
     self[hex.x][hex.y] = nil
   end
+end
+
+function Hex.Set:random()
+  local it = drop(mathx.random(0, self.size - 1), self:iter())
+  return it()
 end
 
 function Hex.Set.member(hex)
@@ -83,6 +93,9 @@ function Hex.Set:iter_rows()
   local x, row = nil
   return function()
     x, row = next(self, x)
+    while type(x) == "string" do
+      x, row = next(self, x)
+    end
     return row
   end
 end
@@ -103,10 +116,6 @@ function Hex.Set:empty()
     return false
   end
   return true
-end
-
-function Hex.Set:size()
-  return fold(arith.add, 0, map(function(_) return 1 end, self:iter()))
 end
 
 return Hex
