@@ -55,7 +55,7 @@ function WML:insert(tag, value)
     contents = WML:tag(tag, value)
   end
   table.insert(self, contents)
-  return contents
+  return contents[2]
 end
 
 function WML:pretty_print(indent)
@@ -121,6 +121,14 @@ function WML.Tag:find(tag, index)
   return self[2]:find(tag, index)
 end
 
+function WML.Tag:set(k, v)
+  self[2][k] = v
+end
+
+function WML.Tag:get(k)
+  return self[2][k]
+end
+
 function WML.Tag:merge(wml)
   setmetatable(self, WML)
   local name = table.remove(self, 1)
@@ -130,7 +138,7 @@ function WML.Tag:merge(wml)
 end
 
 function WML.Tag:insert(tag, content)
-  self[2]:insert(tag, content)
+  return self[2]:insert(tag, content)
 end
 
 function WML.Tag:pretty_print(indent)
