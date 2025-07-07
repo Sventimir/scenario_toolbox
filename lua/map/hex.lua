@@ -60,11 +60,14 @@ end
 
 function Hex.Set:add(hex)
   if self[hex.x] then
-    self[hex.x][hex.y] = hex
+    if not self[hex.x][hex.y] then
+      self[hex.x][hex.y] = hex
+      self.size = self.size + 1
+    end
   else
     self[hex.x] = { [hex.y] = hex }
+    self.size = self.size + 1
   end
-  self.size = self.size + 1
 end
 
 function Hex.Set:remove(hex)
@@ -81,7 +84,7 @@ function Hex.Set:random()
   return it()
 end
 
-function Hex.Set.member(hex)
+function Hex.Set:member(hex)
   if self[hex.x] then
     return self[hex.x][hex.y] and true or false
   else
@@ -116,6 +119,20 @@ function Hex.Set:empty()
     return false
   end
   return true
+end
+
+function Hex.Set:intersect(other)
+  local sets = { self, other }
+  table.sort(sets, function(a, b) return a.size < b.size end)
+  return Hex.Set:new(filter(function(h) return sets[2]:member(h) end, sets[1]:iter()))
+end
+
+function Hex.Set:diff(other)
+  return Hex.Set:new(filter(function(h) return not other:member(h) end, self:iter()))
+end
+
+function Hex.Set:union(other)
+  return Hex.Set:new(chain(self:iter(), other:iter()))
 end
 
 return Hex
