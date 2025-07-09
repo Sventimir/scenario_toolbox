@@ -186,4 +186,8 @@ function WML.micro_ai(ai_type, side, props)
   return WML:tag("micro_ai", props)
 end
 
+function WML.time(props)
+  return WML:tag("time", props)
+end
+
 return WML

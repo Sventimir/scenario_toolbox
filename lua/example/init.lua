@@ -12,6 +12,40 @@ meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 altar = { x = boss.variables.altar_x, y = boss.variables.altar_y }
 
 wesnoth.game_events.add({
+    name = "start",
+    id = "setup_micro_ai",
+    content = WML:new({
+        WML.micro_ai("wolves_multipacks", boss.side, {
+                       type = "Wolf",
+                       pack_size = 4,
+                       WML:tag("avoid", {
+                                 WML:tag("not", { terrain = meadows_terrain })
+                       })
+        }),
+        WML.micro_ai("big_animals", boss.side, {
+                       WML.filter({
+                           type="Giant Rat",
+                           WML.filter_location({
+                               WML:tag("not", { area = "boss_fight" })
+                           })
+                       }),
+                       WML.filter_location({ terrain = meadows_terrain }),
+                       WML:tag("filter_location_wander", { terrain = meadows_terrain })
+        }),
+        WML.micro_ai("forest_animals", boss.side, {
+                       tusker_type = "Woodland Boar",
+                       tusklet_type = "Piglet",
+                       deer_type = "Bay Horse",
+                       WML:tag("filter_location", { terrain = meadows_terrain .. ",Ww" })
+        }),
+        WML.micro_ai("assassin", boss.side, {
+                       WML.filter({ type = "Cave Bear" }),
+                       WML.filter_second({ side = player_sides, canrecruit = true }),
+        })
+    })
+})
+
+wesnoth.game_events.add({
     name = "prestart",
     id = "setup_summons_menu",
     content = WML:new({
@@ -38,44 +72,44 @@ wesnoth.game_events.add_menu(
   "summon_menu",
   function()
     local avatar = wesnoth.units.create({
+        id = "Boss1-avatar",
+        name = "Imiędoustalenia",
         type = "Wose Shaman",
         side = boss.side,
+        hitpoints = 100,
     })
     local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, avatar)
+    wesnoth.map.place_area(
+      WML:new({
+          id = "boss-fight",
+          x = altar.x,
+          y = altar.y,
+          radius = 3,
+          WML.time({
+              name = "Aura Zbuntowanego Imiędoustalenia",
+              description = "Wokół Zbuntowanego panuje ciemność i burza z piorunami.",
+              image = "misc/time-schedules/schedule-midnight.png",
+              lawful_bonus = -25,
+              red = -75,
+              green = -45,
+              blue = -13,
+          })
+      })
+    )
     wesnoth.units.to_map(avatar, x, y)
 end)
 
 wesnoth.game_events.add({
-    name = "start",
-    id = "setup_micro_ai",
+    name = "die",
+    id = "boss-defeated",
+    first_time_only = true,
+    filter = WML:new({ id = "Boss1-avatar" }),
     content = WML:new({
-        WML.micro_ai("wolves_multipacks", boss.side, {
-                       type = "Wolf",
-                       pack_size = 4, 
-                       WML:tag("avoid", {
-                                 WML:tag("not", { terrain = meadows_terrain })
-                       })
-        }),
-        WML.micro_ai("big_animals", boss.side, {
-                       WML.filter({
-                           type="Giant Rat"
-                       }),
-                       WML.filter_location({ terrain = meadows_terrain }),
-                       WML:tag("filter_location_wander", { terrain = meadows_terrain })
-        }),
-        WML.micro_ai("forest_animals", boss.side, {
-                       tusker_type = "Woodland Boar",
-                       tusklet_type = "Piglet",
-                       deer_type = "Bay Horse",
-                       WML:tag("filter_location", { terrain = meadows_terrain .. ",Ww" })
-        }),
-        WML.micro_ai("assassin", boss.side, {
-                       WML.filter({ type = "Cave Bear" }),
-                       WML.filter_second({ side = player_sides, canrecruit = true }),
-        })
+        WML:tag("remove_time_area", { id = "boss-fight" }),
+        WML:tag("endlevel", { result = "victory" })
     })
 })
-    
+
 wesnoth.game_events.add({
     name = string.format("side %s turn", boss.side),
     id = string.format("%s-spawn", boss.team_name),
