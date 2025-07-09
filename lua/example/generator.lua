@@ -103,6 +103,9 @@ function Gen:height_map()
 
   while not hex.height do
     set_height(self, hex)
+    if hex.biome and hex.height < -1 then
+      hex.biome:remove_hex(hex)
+    end
     x, y = v:translate(x, y)
     hex = self.map:get(x, y)
     if not hex or hex.height then
@@ -234,24 +237,17 @@ function Gen:initial_spawn(biome, side)
     Spawn:new("Bay Horse"),
   }
 
-  -- for unit in iter(scenario:find("unit")) do
-  --   local hex = self.map:get(unit.x, unit.y)
-  --   avaliable_hexes:remove(hex)
-  --   for h in hex:circle(1) do
-  --     available_hexes:remove(h)
-  --   end
-  -- end
+  for h in self.units:iter() do
+    available_hexes = available_hexes:diff(Hex.Set:new(h:in_circle(5)))
+  end
 
   while available_hexes.size > 0 do
     local hex = available_hexes:random()
     available_hexes:remove(hex)
     local s = spawns[mathx.random(#spawns)]:wml(hex, side)
     wml:merge(s)
-    for r = 1, 5 do
-      for h in hex:circle(r) do
-        available_hexes:remove(h)
-      end
-    end
+    available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
+    self.units:add(hex)
   end
 
   return wml
@@ -290,10 +286,13 @@ function Gen:make(cfg)
 
   self:place_encampments()
 
+  self.units = Hex.Set:new()
+
   local starting_positions = as_table(filter(function(h) return h.biome end, self.center:circle(1)))
   for i = 1, cfg.player_count do
     local hex = table.remove(starting_positions, mathx.random(#starting_positions))
     hex.terrain = string.format("%i %s", i, hex.terrain)
+    self.units:add(hex)
   end
 
   s.map_data = self.map:as_map_data()

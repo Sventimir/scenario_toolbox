@@ -5,24 +5,50 @@ local WML = require("scenario_toolbox/lua/wml/wml")
 
 require("scenario_toolbox/lua/example/biomes")
 
+local player_sides = wesnoth.sides.find({ team_name = "Boahterowie" })
 local boss1 = wesnoth.sides.find({ team_name = "Boss1" })[1]
+boss_spawn = Spawn:new("Cave Bear")
+meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
 wesnoth.game_events.add({
-    name = "prestart",
-    id = "initial-spawn",
-    action = function()
-      local spawns = {
-        Spawn:wolf_pack("Wolf", 2, 4),
-        Spawn:family("Woodland Boar", "Piglet", 2, 4),
-        Spawn:new("Giant Rat"),
-        Spawn:new("Bay Horse"),
-      }
-      local available_hexes = wesnoth.map.find(inactive_spawn_filter(Meadows, boss1.side))
-      while #available_hexes > 0 do
-        local hex = available_hexes[mathx.random(#available_hexes)]
-        spawns[mathx.random(#spawns)]:spawn(hex, boss1.side)
-      end
-    end
+    name = "start",
+    id = "setup_micro_ai",
+    WML:tag("micro_ai", {
+              side = boss1.side,
+              ai_type = "wolfves_multipacks",
+              action = "add",
+              type = "Wolf",
+              pack_size = 4, 
+              WML:tag("avoid", {
+                        WML:tag("not", { terrain = meadows_terrain })
+              })
+    }),
+    WML:tag("micro_ai", {
+              side = boss1.side,
+              ai_type = "big_animals",
+              action = "add",
+              WML:tag("filter", {
+                        type="Giant Rat"
+              }),
+              WML:tag("filter_location", { terrain = meadows_terrain }),
+              WML:tag("filter_location_wander", { terrain = meadows_terrain })
+    }),
+    WML:tag("micro_ai", {
+              side = boss1.side,
+              ai_type = "forest_animals",
+              action = "add",
+              tusker_type = "Woodland Boar",
+              tusklet_type = "Piglet",
+              deer_type = "Bay Horse",
+              WML:tag("filter_location", { terrain = meadows_terrain .. ",Ww" })
+    }),
+    WML:tag("micro_ai", {
+              side = boss1.side,
+              ai_type = "assasin",
+              action = "add",
+              WML:tag("filter", { type = "Cave Bear" }),
+              WML:tag("filter_second", { side = player_sides, canrecruit = true }),
+    })
 })
 
 wesnoth.game_events.add({
@@ -32,7 +58,7 @@ wesnoth.game_events.add({
     action = function() 
       local vars = boss1.variables
       local altar = Hex:from_wesnoth(wesnoth.map.get(vars.altar_x, vars.altar_y))
-      Spawn:wolf_pack("Wolf", 3, 6):spawn(altar, boss1.side)
+      boss_spawn:spawn(altar, boss1.side)
     end
 })
 

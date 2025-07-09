@@ -30,6 +30,10 @@ function Hex:circle(radius)
   return map(function(v) return self:translate(v) end, Vec.equidistant(radius))
 end
 
+function Hex:in_circle(radius)
+  return chain(iter({ self }), join(map(function(r) return self:circle(r) end, take(radius, arith.nats()))))
+end
+
 function Hex:show()
   return self.terrain
 end
