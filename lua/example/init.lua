@@ -103,7 +103,7 @@ wesnoth.game_events.add({
     name = "die",
     id = "boss-defeated",
     first_time_only = true,
-    filter = WML:new({ id = "Boss1-avatar" }),
+    filter = WML:new({ WML.filter({ id = "Boss1-avatar" }) }),
     content = WML:new({
         WML:tag("remove_time_area", { id = "boss-fight" }),
         WML:tag("endlevel", { result = "victory" })
