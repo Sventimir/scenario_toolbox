@@ -167,4 +167,23 @@ function WML.Tag:__bor(other)
   return WML:new({ self }) | other
 end
 
+function WML.filter(props)
+  return WML:tag("filter", props)
+end
+
+function WML.filter_second(props)
+  return WML:tag("filter_second", props)
+end
+
+function WML.filter_location(props)
+  return WML:tag("filter_location", props)
+end
+
+function WML.micro_ai(ai_type, side, props)
+  props.ai_type = ai_type
+  props.side = side
+  props.action = props.action or "add"
+  return WML:tag("micro_ai", props)
+end
+
 return WML

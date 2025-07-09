@@ -312,7 +312,7 @@ function Gen:make(cfg)
         leader_lock = false,
         fog = true,
         shroud = true,
-        gold = 0,
+        gold = 50,
         hidden = false,
         income = 0,
         save_id = "player" .. i,
