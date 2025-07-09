@@ -9,43 +9,79 @@ local player_sides = wesnoth.sides.find({ team_name = "Boahterowie" })
 local boss = wesnoth.sides.find({ team_name = "Boss1" })[1]
 boss_spawn = Spawn:new("Cave Bear")
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
+altar = { x = boss.variables.altar_x, y = boss.variables.altar_y }
+
+wesnoth.game_events.add({
+    name = "prestart",
+    id = "setup_summons_menu",
+    content = WML:new({
+        WML:tag("set_menu_item", {
+                  id = "summon_menu",
+                  description = "Przywołanie Zbuntowanego",
+                  WML.filter_location({
+                      x = altar.x,
+                      y = altar.y,
+                      WML:tag("and", {
+                                WML:tag("filter_adjacent_location", {
+                                          WML.filter({ canrecruit = true })
+                                }),
+                                WML:tag("or", {
+                                          WML.filter({ canrecruit = true })
+                                })
+                      })
+                  }),
+        })
+    })
+})
+
+wesnoth.game_events.add_menu(
+  "summon_menu",
+  function()
+    local avatar = wesnoth.units.create({
+        type = "Wose Shaman",
+        side = boss.side,
+    })
+    local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, avatar)
+    wesnoth.units.to_map(avatar, x, y)
+end)
 
 wesnoth.game_events.add({
     name = "start",
     id = "setup_micro_ai",
-    WML.micro_ai("wolves_multipack", boss.side, {
-              type = "Wolf",
-              pack_size = 4, 
-              WML:tag("avoid", {
-                        WML:tag("not", { terrain = meadows_terrain })
-              })
-    }),
-    WML.micro_ai("big_animals", boss.side, {
-              WML.filter({
-                        type="Giant Rat"
-              }),
-              WML.filter_location({ terrain = meadows_terrain }),
-              WML:tag("filter_location_wander", { terrain = meadows_terrain })
-    }),
-    WML.micro_ai("forest_animals", boss.side, {
-              tusker_type = "Woodland Boar",
-              tusklet_type = "Piglet",
-              deer_type = "Bay Horse",
-              WML:tag("filter_location", { terrain = meadows_terrain .. ",Ww" })
-    }),
-    WML.micro_ai("assasin", boss.side, {
-              WML.filter({ type = "Cave Bear" }),
-              WML.filter_second({ side = player_sides, canrecruit = true }),
+    content = WML:new({
+        WML.micro_ai("wolves_multipacks", boss.side, {
+                       type = "Wolf",
+                       pack_size = 4, 
+                       WML:tag("avoid", {
+                                 WML:tag("not", { terrain = meadows_terrain })
+                       })
+        }),
+        WML.micro_ai("big_animals", boss.side, {
+                       WML.filter({
+                           type="Giant Rat"
+                       }),
+                       WML.filter_location({ terrain = meadows_terrain }),
+                       WML:tag("filter_location_wander", { terrain = meadows_terrain })
+        }),
+        WML.micro_ai("forest_animals", boss.side, {
+                       tusker_type = "Woodland Boar",
+                       tusklet_type = "Piglet",
+                       deer_type = "Bay Horse",
+                       WML:tag("filter_location", { terrain = meadows_terrain .. ",Ww" })
+        }),
+        WML.micro_ai("assassin", boss.side, {
+                       WML.filter({ type = "Cave Bear" }),
+                       WML.filter_second({ side = player_sides, canrecruit = true }),
+        })
     })
 })
-
+    
 wesnoth.game_events.add({
     name = string.format("side %s turn", boss.side),
     id = string.format("%s-spawn", boss.team_name),
     first_time_only = false,
     action = function() 
-      local vars = boss.variables
-      local altar = Hex:from_wesnoth(wesnoth.map.get(vars.altar_x, vars.altar_y))
+      local altar = Hex:from_wesnoth(wesnoth.map.get(altar.x, altar.y))
       boss_spawn:spawn(altar, boss.side)
     end
 })
