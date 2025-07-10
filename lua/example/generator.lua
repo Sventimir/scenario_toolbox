@@ -7,7 +7,7 @@ Side = require("scenario_toolbox/lua/wml/side")
 Scenario = require("scenario_toolbox/lua/wml/scenario")
 Item = require("scenario_toolbox/lua/wml/item")
 Spawn = require("scenario_toolbox/lua/units/spawn")
-require("scenario_toolbox/lua/example/biomes")
+Biomes = require("scenario_toolbox/lua/example/biomes")
 
 GenHex = Hex:new()
 GenHex.__index = GenHex
@@ -65,10 +65,9 @@ local function hex_height(hex)
 end
 
 Gen = {
-  side_color = { "red", "blue", "green" },
-  biomes = { Forest, Swamp, Desert, Snow },
+  side_color = { "red", "blue", "purple", "green", "brown", "black", "white", "orange" },
+  biomes = { Biomes.forest, Biomes.swamp, Biomes.desert, Biomes.snow },
   biome_centers = {},
-  altars = {},
 }
 
 function Gen:border_height(hex)
@@ -147,7 +146,7 @@ function Gen:gen_biome_centers()
       table.insert(initials, all_hexes[i])
       table.insert(self.biome_centers, all_hexes[i])
       if x == 1 then
-        table.insert(self.altars, Item:forsaken_altar(all_hexes[i]))
+        biome.altar = Item:forsaken_altar(all_hexes[i])
       end
       table.remove(all_hexes, i)
     end
@@ -162,7 +161,7 @@ function Gen:expand_biomes()
     for center_idx, center in ipairs(self.biome_centers) do
       local new_hexes = {}
       local potential_hexes = filter(
-        function(hex) return Meadows:belongs(hex) end,
+        function(hex) return Biomes.meadows:belongs(hex) end,
         center:circle(r)
       )
       for hex in potential_hexes do
@@ -214,8 +213,8 @@ function Gen:place_encampments()
       filter_map(
         function(d)
           local h = self.center:translate(v:scale(d))
-          return h.biome and h ~= self.meadows_altar
-            and all(function(a) return a.hex ~= h end, iter(self.altars))
+          return h.biome
+            and all(function(name) return Biomes[name].altar.hex ~= h end, pairs(Biomes))
             and h
         end,
         take_while(function(d) return d < max_dist end, drop(min_dist, arith.nats()))
@@ -250,7 +249,7 @@ end
 
 function Gen:make(cfg)
   local s = Scenario:new(cfg:find("scenario", 1))
-  self.map = Map:new(cfg.width, cfg.height, Meadows)
+  self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
   self:height_map()
   self:gen_biome_centers()
@@ -263,13 +262,13 @@ function Gen:make(cfg)
   local potential_meadows_altar = {}
   for r = mathx.floor(cfg.width / 4), cfg.width / 2 do
     for hex in self.center:circle(r) do
-      if hex.height > 0 and Meadows:belongs(hex) then
+      if hex.height > 0 and Biomes.meadows:belongs(hex) then
         table.insert(potential_meadows_altar, hex)
       end
     end
   end
   self.meadows_altar = potential_meadows_altar[mathx.random(#potential_meadows_altar)]
-  table.insert(self.altars, Item:forsaken_altar(self.meadows_altar))
+  Biomes.meadows.altar = Item:forsaken_altar(self.meadows_altar)
   
   self.altar = Item:new("altar", self.center, {
                           image = "items/altar.png",
@@ -293,10 +292,11 @@ function Gen:make(cfg)
   s.map_data = self.map:as_map_data()
 
   local schedule = s:find("time")
-  s:insert(Meadows:time_area(iter(schedule)))
+  s:insert(Biomes.meadows:time_area(iter(schedule)))
   for biome in iter(self.biomes) do
     s:insert(biome:time_area(iter(schedule)))
   end
+  local side_counter = 0
 
   for i = 1, cfg.player_count do
     local side = Side:new({
@@ -315,31 +315,39 @@ function Gen:make(cfg)
         defeat_condition = "never",
     })
     s:insert("side", side)
-  end
-  boss = Side:new({
-               side = cfg.player_count + 1,
-               color = "black",
-               faction = "Custom",
-               controller = "ai",
-               faction_lock = true,
-               leader_lock = false,
-               fog = false,
-               shroud = false,
-               gold = 0,
-               hidden = true,
-               income = 0,
-               team_name = "Boss1",
-               defeat_condition = "never",
-  })
-  boss:var("altar_x", self.meadows_altar.x)
-  boss:var("altar_y", self.meadows_altar.y)
-  s:insert("side", boss)
-  s:insert(self.altar:wml())
-  for altar in iter(self.altars) do
-    s:insert(altar:wml())
+    side_counter = i
   end
 
-  boss:merge(self:initial_spawn(Meadows, boss.side))
+  for _, biome in pairs(Biomes) do
+    side_counter = side_counter + 1
+    boss = Side:new({
+        side = side_counter,
+        color = self.side_color[side_counter],
+        faction = "Custom",
+        controller = "ai",
+        faction_lock = true,
+        leader_lock = false,
+        fog = false,
+        shroud = false,
+        gold = 0,
+        hidden = true,
+        income = 0,
+        team_name = biome.name,
+        defeat_condition = "never",
+    })
+    local vars = WML:tag("variables", { 
+                           biome = biome.name,
+                           WML:tag("altar", {
+                                     x = biome.altar.hex.x,
+                                     y = biome.altar.hex.y
+                           })
+    })
+    boss:merge(self:initial_spawn(biome, side_counter))
+    boss:insert(vars)
+
+    s:insert("side", boss)
+    s:insert(biome.altar:wml())
+  end
 
   s:insert("event", {
              name = "preload",

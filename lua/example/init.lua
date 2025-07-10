@@ -2,13 +2,11 @@ wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 local Hex = require("scenario_toolbox/lua/map/hex")
 local WML = require("scenario_toolbox/lua/wml/wml")
-
-require("scenario_toolbox/lua/example/biomes")
+local Biomes = require("scenario_toolbox/lua/example/biomes")
 
 local player_sides = wesnoth.sides.find({ team_name = "Boahterowie" })
-local boss = wesnoth.sides.find({ team_name = "Boss1" })[1]
+local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
-altar = { x = boss.variables.altar_x, y = boss.variables.altar_y }
 
 wesnoth.game_events.add({
     name = "start",
@@ -54,8 +52,8 @@ wesnoth.game_events.add({
                   id = "summon_menu",
                   description = "Przywołanie Zbuntowanego",
                   WML.filter_location({
-                      x = altar.x,
-                      y = altar.y,
+                      x = boss.variables.altar.x,
+                      y = boss.variables.altar.y,
                       WML:tag("and", {
                                 WML:tag("filter_adjacent_location", {
                                           WML.filter({ canrecruit = true })
@@ -72,6 +70,7 @@ wesnoth.game_events.add({
 wesnoth.game_events.add_menu(
   "summon_menu",
   function()
+    local altar = boss.variables.altar
     local avatar = wesnoth.units.create({
         id = "Boss1-avatar",
         name = "Imiędoustalenia",
@@ -116,8 +115,8 @@ wesnoth.game_events.add({
     id = string.format("%s-spawn", boss.team_name),
     first_time_only = false,
     action = function()
-      local spawn = Meadows.spawn.active[mathx.random(#Meadows.spawn.active)]
-      local altar = Hex:from_wesnoth(wesnoth.map.get(altar.x, altar.y))
+      local spawn = Biomes.meadows.spawn.active[mathx.random(#Biomes.meadows.spawn.active)]
+      local altar = Hex:from_wesnoth(wesnoth.map.get(boss.variables.altar.x, boss.variables.altar.y))
       spawn:spawn(altar, boss.side)
     end
 })

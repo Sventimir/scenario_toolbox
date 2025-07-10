@@ -67,6 +67,23 @@ Forest:add_feat("forest", arith.Ratio:new(9, 10), { "Fp" }, forest_mod)
 Forest.keep = "Kv"
 Forest.camp = "Cv"
 
+Swamp = Biome:new("swamp")
+Swamp.heights = {
+  [-2] = "Ww",
+  [-1] = "Ss",
+  [0]  = "Ss",
+  [1]  = "Sm",
+  [2]  = "Hhd",
+}
+Swamp:add_feat("village", arith.Ratio:new(1, 100), { "Vhs" }, village_mod)
+Swamp:add_feat(
+  "forest",
+  arith.Ratio:new(1, 10),
+  { "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fetd" },
+  forest_mod
+)
+Swamp.keep = "Khs"
+Swamp.camp = "Chs"
 Snow = Biome:new("snow")
 Snow.heights = {
   [-2] = "Wo",
@@ -98,20 +115,11 @@ Desert:add_feat("forest", arith.Ratio:new(1, 5), { "Ftd" }, forest_mod)
 Desert.keep = "Kdr"
 Desert.camp = "Cdr"
 
-Swamp = Biome:new("swamp")
-Swamp.heights = {
-  [-2] = "Ww",
-  [-1] = "Ss",
-  [0]  = "Ss",
-  [1]  = "Sm",
-  [2]  = "Hhd",
+
+return {
+  meadows = Meadows,
+  forest = Forest,
+  swamp = Swamp,
+  snow = Snow,
+  desert = Desert
 }
-Swamp:add_feat("village", arith.Ratio:new(1, 100), { "Vhs" }, village_mod)
-Swamp:add_feat(
-  "forest",
-  arith.Ratio:new(1, 10),
-  { "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fetd" },
-  forest_mod
-)
-Swamp.keep = "Khs"
-Swamp.camp = "Chs"
