@@ -28,7 +28,7 @@ end
 
 function Spawn:spawn(hex, side)
   local animation = wesnoth.units.create_animator()
-  for _, desc in self:placement(hex, side) do
+  for desc in self:placement(hex, side) do
     local u = wesnoth.units.create(desc)
     animation:add(u, "recruited", "")
     wesnoth.units.to_map(u)

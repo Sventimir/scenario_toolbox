@@ -26,11 +26,11 @@ wesnoth.game_events.add({
                        WML.filter({
                            type="Giant Rat",
                            WML.filter_location({
-                               WML:tag("not", { area = "boss_fight" })
+                               WML:tag("not", { area = "boss-fight" })
                            })
                        }),
                        WML.filter_location({ terrain = meadows_terrain }),
-                       WML:tag("filter_location_wander", { terrain = meadows_terrain })
+                       WML:tag("filter_location_wander", { area = "meadows" })
         }),
         WML.micro_ai("forest_animals", boss.side, {
                        tusker_type = "Woodland Boar",

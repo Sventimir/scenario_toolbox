@@ -129,6 +129,10 @@ function WML.Tag:get(k)
   return self[2][k]
 end
 
+function WML.Tag:contents()
+  return self[2]
+end
+
 function WML.Tag:merge(wml)
   setmetatable(self, WML)
   local name = table.remove(self, 1)
