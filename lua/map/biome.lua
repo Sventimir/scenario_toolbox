@@ -4,7 +4,13 @@ local Biome = {}
 Biome.__index = Biome
 
 function Biome:new(name)
-  return setmetatable({ name = name, hexes = Hex.Set:new(), features = {} }, self)
+  local this = {
+      name = name,
+      hexes = Hex.Set:new(),
+      features = { },
+      spawn = { active = { }, passive = { } },
+  }
+  return setmetatable(this, self)
 end
 
 function Biome:terrain(hex)

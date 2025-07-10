@@ -230,18 +230,13 @@ end
 function Gen:initial_spawn(biome, side)
   local wml = WML:new()
   local available_hexes = Hex.Set:new(biome.hexes:iter())
-  local spawns = {
-    Spawn:wolf_pack("Wolf", 2, 4),
-    Spawn:family("Woodland Boar", "Piglet", 2, 4),
-    Spawn:new("Giant Rat"),
-    Spawn:new("Bay Horse"),
-  }
+  local spawns = biome.spawn.passive or {}
 
   for h in self.units:iter() do
     available_hexes = available_hexes:diff(Hex.Set:new(h:in_circle(5)))
   end
 
-  while available_hexes.size > 0 do
+  while #spawns > 0 and available_hexes.size > 0 do
     local hex = available_hexes:random()
     available_hexes:remove(hex)
     local s = spawns[mathx.random(#spawns)]:wml(hex, side)

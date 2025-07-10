@@ -1,4 +1,6 @@
 Biome = require("scenario_toolbox/lua/map/biome")
+Spawn = require("scenario_toolbox/lua/units/spawn")
+
 
 function village_mod(prob, hex)
   if hex.height >= 0 then
@@ -42,8 +44,15 @@ Meadows:add_feat(
 Meadows.keep = "Ker"
 Meadows.camp = "Cer"
 Meadows.spawn = {
-  passive = { "Giant Rat", "Piglet", "Woodland Boar", "Rock", "Bay Horse", "Wolf" },
-  active = { "Cave Bear", "Woodland Boar", "Wolf" }
+  passive = { 
+    Spawn:family("Woodland Boar", "Piglet", 2, 4),
+    Spawn:new("Raven"),
+    Spawn:new("Giant Rat"),
+    Spawn:new("Bay Horse"),
+  },
+  active = {
+    Spawn:wolf_pack("Wolf", 1, 2),
+  }
 }
 
 Forest = Biome:new("forest")
