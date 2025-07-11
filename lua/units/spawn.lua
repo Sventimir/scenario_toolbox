@@ -4,13 +4,17 @@ local WML = require("scenario_toolbox/lua/wml/wml")
 local Spawn = {}
 Spawn.__index = Spawn
 
-function Spawn:new(unit_type)
-  local this = { unit_type = unit_type }
+function Spawn:new(unit_type, extra)
+  local this = { unit_type = unit_type, extra = extra or {} }
   return setmetatable(this, self)
 end
 
 function Spawn:placement(hex, side)
-  return iter({ { type = self.unit_type, side = side, x = hex.x, y = hex.y } })
+  local u = { type = self.unit_type, side = side, x = hex.x, y = hex.y }
+  for k, v in pairs(self.extra) do
+    u[k] = v
+  end
+  return iter({u})
 end
 
 function Spawn:wml(hex, side)
