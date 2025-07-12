@@ -349,6 +349,8 @@ function Gen:make(cfg)
     s:insert(biome.altar:wml())
   end
 
+  s:insert(self.altar:wml())
+
   s:insert("event", {
              name = "preload",
              id = "preload",
