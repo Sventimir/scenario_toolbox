@@ -145,9 +145,6 @@ function Gen:gen_biome_centers()
       biome:add_hex(all_hexes[i])
       table.insert(initials, all_hexes[i])
       table.insert(self.biome_centers, all_hexes[i])
-      if x == 1 then
-        biome.altar = Item:forsaken_altar(all_hexes[i])
-      end
       table.remove(all_hexes, i)
     end
 
@@ -259,16 +256,40 @@ function Gen:make(cfg)
     if hex.biome then hex.biome:apply_features(hex) end
   end
   
-  local potential_meadows_altar = {}
-  for r = mathx.floor(cfg.width / 4), cfg.width / 2 do
-    for hex in self.center:circle(r) do
-      if hex.height > 0 and Biomes.meadows:belongs(hex) then
-        table.insert(potential_meadows_altar, hex)
+  local potential_meadows_altar = Hex.Set:new(
+    filter(
+      function(h)
+        return h.height >= 0 and h:distance(self.center) >= mathx.floor(cfg.width / 4)
+          and all(function(n) return n.biome.name == "meadows" end, h:in_circle(1))
+      end,
+      Biomes.meadows.hexes:iter()
+    )
+  )
+  self.meadows_altar = potential_meadows_altar:random()
+  Biomes.meadows.altar = Item:forsaken_altar(self.meadows_altar)
+
+  for biome in iter(self.biomes) do
+    local r = 3
+    while not biome.altar do
+      local available_hexes = Hex.Set:new(
+        filter(
+          function(h)
+            return h.height >= 0 and all(
+              function(n)
+                return n.biome and n.biome.name == biome.name
+              end,
+              h:in_circle(r))
+          end,
+          biome.hexes:iter()
+        )
+      )
+      if available_hexes.size > 0 then
+        biome.altar = Item:forsaken_altar(available_hexes:random())
+      else
+        r = r - 1
       end
     end
   end
-  self.meadows_altar = potential_meadows_altar[mathx.random(#potential_meadows_altar)]
-  Biomes.meadows.altar = Item:forsaken_altar(self.meadows_altar)
   
   self.altar = Item:new("altar", self.center, {
                           image = "items/altar.png",
