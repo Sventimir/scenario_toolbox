@@ -8,6 +8,7 @@ Scenario = require("scenario_toolbox/lua/wml/scenario")
 Item = require("scenario_toolbox/lua/wml/item")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Biomes = require("scenario_toolbox/lua/example/biomes")
+Predicate = require("scenario_toolbox/lua/lib/predicate")
 
 GenHex = Hex:new()
 GenHex.__index = GenHex
@@ -158,7 +159,7 @@ function Gen:expand_biomes()
     for center_idx, center in ipairs(self.biome_centers) do
       local new_hexes = {}
       local potential_hexes = filter(
-        function(hex) return Biomes.meadows:belongs(hex) end,
+        Predicate:has("name", "meadows"):contra_map(get("biome")),
         center:circle(r)
       )
       for hex in potential_hexes do
@@ -194,31 +195,31 @@ function Gen:encampment(hex)
 end
 
 function Gen:place_encampments()
-  local hexes = as_table(
+  local hexes = Hex.Set:new(
     filter(
-      function(h) return h.biome end,
+      Predicate:has("biome"),
       chain(self.center:circle(2), self.center:circle(3))
     )
   )
-  self:encampment(hexes[mathx.random(#hexes)])
+  self:encampment(hexes:random())
 
   local dim = mathx.min(self.map.height, self.map.width)
   local min_dist = mathx.max(dim / 5, 5)
   local max_dist = dim / 2 - 5
   for v in Vec.unitary.each() do
-    hexes = as_table(
+    hexes = Hex.Set:new(
       filter_map(
         function(d)
           local h = self.center:translate(v:scale(d))
-          return h.biome
-            and all(function(name) return Biomes[name].altar.hex ~= h end, pairs(Biomes))
-            and h
+          if h.biome and all(function(name) return Biomes[name].altar.hex ~= h end, pairs(Biomes)) then
+            return h
+          end
         end,
         take_while(function(d) return d < max_dist end, drop(min_dist, arith.nats()))
       )
     )
     if #hexes > 0 then
-      self:encampment(hexes[mathx.random(#hexes)])
+      self:encampment(hexes:random())
     end
   end
 end
@@ -356,7 +357,7 @@ function Gen:make(cfg)
         team_name = biome.name,
         defeat_condition = "never",
     })
-    local vars = WML:tag("variables", { 
+    local vars = WML:tag("variables", {
                            biome = biome.name,
                            WML:tag("altar", {
                                      x = biome.altar.hex.x,
@@ -371,6 +372,7 @@ function Gen:make(cfg)
   end
 
   s:insert(self.altar:wml())
+  s:insert("variables", { active = "meadows" })
 
   s:insert("event", {
              name = "preload",

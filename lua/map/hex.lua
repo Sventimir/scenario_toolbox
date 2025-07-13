@@ -1,4 +1,5 @@
 local Vec = require("scenario_toolbox/lua/map/cubic_vector")
+local Predicate = require("scenario_toolbox/lua/lib/predicate")
 
 local Hex = {}
 
@@ -40,6 +41,10 @@ end
 
 function Hex:__tostring()
   return string.format("(%d, %d)[%s]", self.x, self.y, self.terrain)
+end
+
+function Hex:__equal(other)
+  return self.x == other.x and self.y == other.y
 end
 
 function Hex:as_vec()
@@ -94,6 +99,10 @@ function Hex.Set:member(hex)
   else
     return false
   end
+end
+
+function Hex.Set:memeber_pred()
+  return Predicate:func(function(x) return self:member(x) end)
 end
 
 function Hex.Set:iter_rows()

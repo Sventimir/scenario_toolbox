@@ -224,5 +224,9 @@ function keys(t)
   return keys
 end
 
+function get(key)
+  return function(tbl) return tbl[key] end
+end
+
 arith = require("scenario_toolbox/lua/lib/arith")
 str = require("scenario_toolbox/lua/lib/str")

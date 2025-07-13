@@ -107,20 +107,23 @@ for side in iter(wesnoth.sides.find({ WML:tag("has_enemy", { side = 1 }) })) do
         })
     })
   end
-    
-  if side.variables.active then
-    wesnoth.game_events.add({
-        name = string.format("side %s turn", side.side),
-        id = string.format("%s-spawn", side.team_name),
-        first_time_only = false,
-        action = function()
-          local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
-          local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
-          spawn:spawn(altar, side.side)
-        end
-    })
-  end
 end
+
+wesnoth.game_events.add({
+    name = string.format("side turn"),
+    id = string.format("active-boss-spawn"),
+    first_time_only = false,
+    filter = function()
+      return wesnoth.sides[wml.variables.side_number].variables.biome == wml.variables.active
+    end,
+    action = function()
+      local side = wesnoth.sides[wml.variables.side_number]
+      local biome = Biomes[wml.variables.active]
+      local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
+      local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
+      spawn:spawn(altar, side.side)
+    end
+})
 
 function inactive_spawn_filter(biome, side)
   local other_sides = fold(
