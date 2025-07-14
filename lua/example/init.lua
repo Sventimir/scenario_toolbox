@@ -99,24 +99,20 @@ wesnoth.game_events.add_menu(
           })
       })
     )
-    spawn:spawn(hex, side.side)
+    local avatar = spawn:spawn(hex, side.side)
+    avatar.role = "boss"
 end)
 
-for side in iter(enemies) do
-  biome = Biomes[side.variables.biome]
-  if biome.spawn and biome.spawn.boss then
-    wesnoth.game_events.add({
-        name = "die",
-        id = string.format("boss-%i-defeated", side.side),
-        first_time_only = true,
-        filter = WML:new({ WML.filter({ id = biome.spawn.boss.extra.id }) }),
-        content = WML:new({
-            WML:tag("remove_time_area", { id = "boss-fight" }),
-            WML:tag("endlevel", { result = "victory" })
-        })
+wesnoth.game_events.add({
+    name = "die",
+    id = "boss-defeated",
+    first_time_only = false,
+    filter = WML:new({ WML.filter({ role = "boss" }) }),
+    content = WML:new({
+        WML:tag("remove_time_area", { id = "boss-fight" }),
+        WML:tag("endlevel", { result = "victory" })
     })
-  end
-end
+})
 
 wesnoth.game_events.add({
     name = string.format("side turn"),
