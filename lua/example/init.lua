@@ -4,7 +4,9 @@ local Hex = require("scenario_toolbox/lua/map/hex")
 local WML = require("scenario_toolbox/lua/wml/wml")
 local Biomes = require("scenario_toolbox/lua/example/biomes")
 
-local player_sides = wesnoth.sides.find({ team_name = "Boahterowie" })
+local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
+local enemies = wesnoth.sides.find({ wml.tag["not"]({ team_name = "Bohaterowie" }) })
+local altars = map(function(s) return s.variables.altar end, iter(enemies))
 local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
@@ -52,8 +54,8 @@ wesnoth.game_events.add({
                   id = "summon_menu",
                   description = "Przywołanie Zbuntowanego",
                   WML.filter_location({
-                      x = boss.variables.altar.x,
-                      y = boss.variables.altar.y,
+                      x = str.join(map(get("x"), altars), ","),
+                      y = str.join(map(get("y"), altars), ","),
                       WML:tag("and", {
                                 WML:tag("filter_adjacent_location", {
                                           WML.filter({ canrecruit = true })
@@ -67,35 +69,42 @@ wesnoth.game_events.add({
     })
 })
 
-for side in iter(wesnoth.sides.find({ WML:tag("has_enemy", { side = 1 }) })) do
-  biome = Biomes[side.variables.biome]
-  if biome.spawn.boss then
-    wesnoth.game_events.add_menu(
-      string.format("summon_menu_%i", side.side),
-      function()
-        local altar = side.variables.altar
-        local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, avatar)
-        local hex = { x = x, y = y }
-        wesnoth.map.place_area(
-          WML:new({
-              id = "boss-fight",
-              x = altar.x,
-              y = altar.y,
-              radius = 3,
-              WML.time({
-                  name = "Aura Zbuntowanego Imiędoustalenia",
-                  description = "Wokół Zbuntowanego panuje ciemność i burza z piorunami.",
-                  image = "misc/time-schedules/schedule-midnight.png",
-                  lawful_bonus = -25,
-                  red = -75,
-                  green = -45,
-                  blue = -13,
-              })
+wesnoth.game_events.add_menu(
+  "summon_menu",
+  function()
+    local altar = Hex:from_wesnoth(wesnoth.map.get(wml.variables.x1, wml.variables.y1))
+    local side = filter(
+      function(s)
+        return s.variables.altar.x == altar.x and s.variables.altar.y == altar.y
+      end,
+      iter(enemies)
+    )()
+    local spawn = Biomes[side.variables.biome].spawn.boss
+    local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, { type = spawn.unit_type })
+    local hex = { x = x, y = y }
+    wesnoth.map.place_area(
+      WML:new({
+          id = "boss-fight",
+          x = altar.x,
+          y = altar.y,
+          radius = 3,
+          WML.time({
+              name = "Aura Zbuntowanego Imiędoustalenia",
+              description = "Wokół Zbuntowanego panuje ciemność i burza z piorunami.",
+              image = "misc/time-schedules/schedule-midnight.png",
+              lawful_bonus = -25,
+              red = -75,
+              green = -45,
+              blue = -13,
           })
-        )
-        biome.spawn.boss:spawn(hex, side.side)
-    end)
-    
+      })
+    )
+    spawn:spawn(hex, side.side)
+end)
+
+for side in iter(enemies) do
+  biome = Biomes[side.variables.biome]
+  if biome.spawn and biome.spawn.boss then
     wesnoth.game_events.add({
         name = "die",
         id = string.format("boss-%i-defeated", side.side),
