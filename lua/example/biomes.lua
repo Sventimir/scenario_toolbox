@@ -126,5 +126,10 @@ return {
   forest = Forest,
   swamp = Swamp,
   snow = Snow,
-  desert = Desert
+  desert = Desert,
+  Meadows,
+  Forest,
+  Swamp,
+  Snow,
+  Desert,
 }

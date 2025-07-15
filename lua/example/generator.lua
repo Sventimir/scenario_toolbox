@@ -342,7 +342,7 @@ function Gen:make(cfg)
     side_counter = i
   end
 
-  for _, biome in pairs(Biomes) do
+  for biome in iter(Biomes) do
     side_counter = side_counter + 1
     boss = Side:new({
         side = side_counter,
