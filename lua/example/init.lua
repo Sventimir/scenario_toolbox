@@ -41,7 +41,10 @@ wesnoth.game_events.add({
         }),
         WML.micro_ai("assassin", boss.side, {
                        WML.filter({ type = "Wolf" }),
-                       WML.filter_second({ side = player_sides, canrecruit = true }),
+                       WML.filter_second({
+                           side = str.join(map(get("side"), iter(player_sides)), ","),
+                           canrecruit = true
+                       }),
         })
     })
 })
