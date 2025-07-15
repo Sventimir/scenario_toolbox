@@ -119,17 +119,26 @@ wesnoth.game_events.add({
 
 wesnoth.game_events.add({
     name = string.format("side turn"),
-    id = string.format("active-boss-spawn"),
+    id = string.format("spawn"),
     first_time_only = false,
     filter = function()
-      return wesnoth.sides[wml.variables.side_number].variables.biome == wml.variables.active
+      return wesnoth.sides[wml.variables.side_number].team_name ~= "Bohaterowie"
     end,
     action = function()
+      -- There are 2 types of spawn: active spawn every turn at the altar
+      -- and passive spawn during the night in all biomes.
+      -- Note that these spawns are not mutually exclusive - they can and will
+      -- happen both for the active side during the night.
       local side = wesnoth.sides[wml.variables.side_number]
-      local biome = Biomes[wml.variables.active]
-      local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
-      local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
-      spawn:spawn(altar, side.side)
+      local biome = Biomes[side.variables.biome]
+      local time = wesnoth.schedule.get_time_of_day(biome.name)
+      if wml.variables.active == biome.name then -- active spawn
+        local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
+        local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
+        spawn:spawn(altar, side.side)
+      end
+      if time.lawful_bonus < 0 then -- passive spawn
+      end
     end
 })
 
