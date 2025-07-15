@@ -54,7 +54,7 @@ Meadows.spawn = {
     Spawn:wolf_pack("Wolf", 1, 2),
   },
   boss = Spawn:new("Great Wolf", {
-                     hitpoints = 90,
+                     max_hitpoints = 90,
                      name = "Imiędoustalenia",
                      id = "meadows-boss",
   })
