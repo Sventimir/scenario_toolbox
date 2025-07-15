@@ -141,7 +141,7 @@ wesnoth.game_events.add({
         local filt = inactive_spawn_filter(biome.name, side.side)
         local hexes = Hex.Set:new(iter(wesnoth.map.find(filt)))
         while hexes.size > 0 do
-          local h = hexes:random()
+          local h = Hex:from_wesnoth(hexes:random())
           local s = biome.spawn.passive[mathx.random(#biome.spawn.passive)]
           s:spawn(h, side.side)
           hexes = Hex.Set:new(iter(wesnoth.map.find(filt)))
@@ -162,21 +162,21 @@ function inactive_spawn_filter(area, side)
     "",
     iter(wesnoth.sides.find({ WML:tag("not", { side = side }) }))
   )
-  return WML:new({
+  return {
       area = area,
-      WML:tag("filter_vision", {
-                visible = false,
-                respect_fog = true,
-                side = other_sides,
+      wml.tag.filter_vision({
+          visible = false,
+          respect_fog = true,
+          side = other_sides,
       }),
-      WML:tag("not", {
-                WML:tag("and", {
-                          WML.filter(),
-                          WML:tag("or", {
-                                    owner_side = string.format("%i,%s", side, other_sides)
-                          }),
-                }),
-                radius = 5,
+      wml.tag["not"]({
+          wml.tagp["and"]({
+              wml.tag.filter({}),
+              wml.tag["or"]({
+                  owner_side = string.format("%i,%s", side, other_sides)
+              }),
+          }),
+          radius = 5,
       })
-  })
+  }
 end
