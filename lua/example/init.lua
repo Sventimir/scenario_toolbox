@@ -137,12 +137,20 @@ wesnoth.game_events.add({
         local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
         spawn:spawn(altar, side.side)
       end
-      if time.lawful_bonus < 0 then -- passive spawn
+      if time.lawful_bonus < 0 and #biome.spawn.passive > 0 then -- passive spawn
+        local filt = inactive_spawn_filter(biome.name, side.side)
+        local hexes = Hex.Set:new(iter(wesnoth.map.find(filt)))
+        while hexes.size > 0 do
+          local h = hexes:random()
+          local s = biome.spawn.passive[mathx.random(#biome.spawn.passive)]
+          s:spawn(h, side.side)
+          hexes = Hex.Set:new(iter(wesnoth.map.find(filt)))
+        end
       end
     end
 })
 
-function inactive_spawn_filter(biome, side)
+function inactive_spawn_filter(area, side)
   local other_sides = fold(
     function(acc, s)
       if acc == "" then
@@ -155,7 +163,7 @@ function inactive_spawn_filter(biome, side)
     iter(wesnoth.sides.find({ WML:tag("not", { side = side }) }))
   )
   return WML:new({
-      area = biome.name,
+      area = area,
       WML:tag("filter_vision", {
                 visible = false,
                 respect_fog = true,
