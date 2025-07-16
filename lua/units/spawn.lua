@@ -4,6 +4,16 @@ local WML = require("scenario_toolbox/lua/wml/wml")
 local Spawn = {}
 Spawn.__index = Spawn
 
+if wesnoth.current then -- this only exists during game
+  function Spawn.valid_location(hex)
+    return wesnoth.map.on_board(wesnoth.current.map, hex)
+  end
+else
+  function Spawn.valid_location(hex)
+    return hex.x > 0 and hex.x <= hex.map.width and hex.y > 0 and hex.y <= hex.map.height
+  end
+end
+
 function Spawn:new(unit_type, extra)
   local this = { unit_type = unit_type, extra = extra or {} }
   return setmetatable(this, self)
@@ -32,7 +42,7 @@ end
 
 function Spawn:spawn(hex, side)
   local animation = wesnoth.units.create_animator()
-  local us
+  local us = {}
   for desc in self:placement(hex, side) do
     local u = wesnoth.units.create(desc)
     animation:add(u, "recruited", "")
@@ -52,7 +62,7 @@ function Spawn:wolf_pack(unit_type, min_size, max_size)
    this.max_size = max_size or 6
 
    function this:placement(hex, side)
-     local hexes = as_table(chain(iter({ hex }), hex:circle(1)))
+     local hexes = as_table(filter(Spawn.valid_location, chain(iter({ hex }), hex:circle(1))))
      return repeatedly(
        function()
          if #hexes > 0 then
@@ -76,7 +86,7 @@ function Spawn:family(parent_type, child_type, min_size, max_size)
   this.max_size = max_size or 6
 
   function this:placement(hex, side)
-    local hexes = as_table(hex:circle(1))
+    local hexes = as_table(filter(Spawn.valid_location, hex:circle(1)))
     return chain(
       Spawn.placement(self, hex, side),
       repeatedly(
