@@ -142,6 +142,7 @@ wesnoth.game_events.add({
       if side.variables.dead_leader then
         local anim = wesnoth.units.create_animator()
         local u = wesnoth.units.create(side.variables.dead_leader)
+        side.variables.dead_leader = nil
         u.x = side.starting_location.x
         u.y = side.starting_location.y
         u.experience = u.experience / 2
