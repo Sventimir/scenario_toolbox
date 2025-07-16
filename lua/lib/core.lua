@@ -155,7 +155,7 @@ function chain(...)
 end
 
 function repeatedly(f, times)
-  local i = 0
+  local i = -1
   return function()
     i = i + 1
     if not times or i < times then
