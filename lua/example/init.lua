@@ -5,6 +5,7 @@ local WML = require("scenario_toolbox/lua/wml/wml")
 local Biomes = require("scenario_toolbox/lua/example/biomes")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
+local players_str = str.join(map(get("side"), iter(player_sides)), ",")
 local enemies = wesnoth.sides.find({ wml.tag["not"]({ team_name = "Bohaterowie" }) })
 local altars = map(function(s) return s.variables.altar end, iter(enemies))
 local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
@@ -42,7 +43,7 @@ wesnoth.game_events.add({
         WML.micro_ai("assassin", boss.side, {
                        WML.filter({ type = "Wolf" }),
                        WML.filter_second({
-                           side = str.join(map(get("side"), iter(player_sides)), ","),
+                           side = players_str,
                            canrecruit = true
                        }),
         })
@@ -103,7 +104,7 @@ wesnoth.game_events.add_menu(
       })
     )
     local avatar = spawn:spawn(hex, side.side)
-    avatar.role = "boss"
+    avatar[1].role = "boss"
 end)
 
 wesnoth.game_events.add({
@@ -115,6 +116,40 @@ wesnoth.game_events.add({
         WML:tag("remove_time_area", { id = "boss-fight" }),
         WML:tag("endlevel", { result = "victory" })
     })
+})
+
+wesnoth.game_events.add({
+    name = "die",
+    id = "hero-defeated",
+    first_time_only = false,
+    filter = { 
+      wml.tag.filter({
+          canrecruit = true,
+          side = players_str,
+    })},
+    action = function()
+      wesnoth.sides[wesnoth.current.side].variables.dead_leader = wml.variables.unit
+    end,
+})
+
+wesnoth.game_events.add({
+    name = "side turn",
+    id = "player-turn-start",
+    first_time_only = false,
+    filter = { wml.tag.filter_side({ side = players_str }) },
+    action = function()
+      local side = wesnoth.sides[wesnoth.current.side]
+      if side.variables.dead_leader then
+        local anim = wesnoth.units.create_animator()
+        local u = wesnoth.units.create(side.variables.dead_leader)
+        u.x = side.starting_location.x
+        u.y = side.starting_location.y
+        u.experience = u.experience / 2
+        anim:add(u, "levelin", "")
+        wesnoth.units.to_map(u)
+        anim:run()
+      end
+    end,
 })
 
 wesnoth.game_events.add({
@@ -170,7 +205,7 @@ function inactive_spawn_filter(area, side)
           side = other_sides,
       }),
       wml.tag["not"]({
-          wml.tagp["and"]({
+          wml.tag["and"]({
               wml.tag.filter({}),
               wml.tag["or"]({
                   owner_side = string.format("%i,%s", side, other_sides)

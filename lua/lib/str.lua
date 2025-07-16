@@ -4,12 +4,12 @@ local function split(input, sep)
 end
 
 local function join(strs, separator)
-  local ret = ""
+  local ret = strs()
   local sep = separator or ""
   for s in strs do
     ret = ret .. sep .. s
   end
-  return ret
+  return ret or ""
 end
 
 return {

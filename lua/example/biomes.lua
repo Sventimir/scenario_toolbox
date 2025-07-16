@@ -51,7 +51,7 @@ Meadows.spawn = {
     Spawn:new("Bay Horse"),
   },
   active = {
-    Spawn:wolf_pack("Wolf", 1, 2),
+    Spawn:wolf_pack("Wolf", 0, 1),
   },
   boss = Spawn:new("Great Wolf", {
                      max_hitpoints = 90,

@@ -32,15 +32,18 @@ end
 
 function Spawn:spawn(hex, side)
   local animation = wesnoth.units.create_animator()
-  local u
+  local us
   for desc in self:placement(hex, side) do
-    u = wesnoth.units.create(desc)
+    local u = wesnoth.units.create(desc)
     animation:add(u, "recruited", "")
     wesnoth.units.to_map(u)
+    table.insert(us, u)
   end
-  wesnoth.interface.scroll_to_hex(hex.x, hex.y, true, false, true)
-  animation:run()
-  return u
+  if #us > 0 then
+    wesnoth.interface.scroll_to_hex(hex.x, hex.y, true, false, true)
+    animation:run()
+  end
+  return us
 end
 
 function Spawn:wolf_pack(unit_type, min_size, max_size)
