@@ -61,6 +61,8 @@ Hex.Set.__index = Hex.Set
 function Hex.Set:new(hexes)
   local this = setmetatable({}, self)
   this.size = 0
+  this.max_row = 0
+  this.min_row = 0
   for hex in hexes or function() end do
     this:add(hex)
   end
@@ -68,23 +70,28 @@ function Hex.Set:new(hexes)
 end
 
 function Hex.Set:add(hex)
-  if self[hex.x] then
-    if not self[hex.x][hex.y] then
-      self[hex.x][hex.y] = hex
+  if self[hex.y] then
+    if not self[hex.y][hex.x] then
+      local row = self[hex.y]
+      row[hex.x] = hex
       self.size = self.size + 1
+      row.min_col = mathx.min(row.min_col, hex.x)
+      row.max_col = mathx.max(row.max_col, hex.x)
     end
   else
-    self[hex.x] = { [hex.y] = hex }
+    self[hex.y] = { [hex.x] = hex, min_col = hex.x, max_col = hex.x }
     self.size = self.size + 1
+    self.min_row = mathx.min(self.min_row, hex.y)
+    self.max_row = mathx.max(self.max_row, hex.y)
   end
 end
 
 function Hex.Set:remove(hex)
-  if self[hex.x] then
-    if self[hex.x][hex.y] then
+  if self[hex.y] then
+    if self[hex.y][hex.x] then
       self.size = self.size - 1
     end
-    self[hex.x][hex.y] = nil
+    self[hex.y][hex.x] = nil
   end
 end
 
@@ -94,8 +101,8 @@ function Hex.Set:random()
 end
 
 function Hex.Set:member(hex)
-  if self[hex.x] then
-    return self[hex.x][hex.y] and true or false
+  if self[hex.y] then
+    return self[hex.y][hex.x] and true or false
   else
     return false
   end
@@ -106,32 +113,28 @@ function Hex.Set:memeber_pred()
 end
 
 function Hex.Set:iter_rows()
-  local x, row = nil
+  local y = self.min_row - 1
   return function()
-    x, row = next(self, x)
-    while type(x) == "string" do
-      x, row = next(self, x)
-    end
-    return row
+    repeat y = y + 1
+    until y >= self.max_row or self[y]
+    return self[y]
   end
 end
 
 function Hex.Set:iter()
   local function iterate(row)
-    local i, item = nil
+    local x = row.min_col - 1
     return function()
-      i, item = next(row, i)
-      return item
+      repeat x = x + 1
+      until x >= row.max_col or row[x]
+      return row[x]
     end
   end
   return join(map(iterate, self:iter_rows()))
 end
 
 function Hex.Set:empty()
-  for _ in self:iter() do
-    return false
-  end
-  return true
+  return self.size == 0
 end
 
 function Hex.Set:intersect(other)

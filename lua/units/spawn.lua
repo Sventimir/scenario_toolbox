@@ -4,7 +4,7 @@ local WML = require("scenario_toolbox/lua/wml/wml")
 local Spawn = {}
 Spawn.__index = Spawn
 
-if wesnoth.current then -- this only exists during game
+if wesnoth and wesnoth.current then -- this only exists during game
   function Spawn.valid_location(hex)
     return wesnoth.map.on_board(wesnoth.current.map, hex)
   end
