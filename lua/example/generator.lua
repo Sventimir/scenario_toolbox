@@ -300,11 +300,11 @@ function Gen:make(cfg)
     side_counter = i
   end
 
-  for biome in iter(Biomes) do
+  for i, biome in ipairs(Biomes) do
     side_counter = side_counter + 1
     boss = Side:new({
         side = side_counter,
-        color = self.side_color[side_counter],
+        color = self.side_color[i + 3],
         faction = "Custom",
         controller = "ai",
         allow_player = false,
