@@ -128,7 +128,8 @@ wesnoth.game_events.add({
           side = players_str,
     })},
     action = function()
-      wesnoth.sides[wesnoth.current.side].variables.dead_leader = wml.variables.unit
+      local u = wml.variables.unit
+      wesnoth.sides[u.side].variables.dead_leader = wml.variables.unit
     end,
 })
 
@@ -142,13 +143,13 @@ wesnoth.game_events.add({
       if side.variables.dead_leader then
         local anim = wesnoth.units.create_animator()
         local u = wesnoth.units.create(side.variables.dead_leader)
-        side.variables.dead_leader = nil
         u.x = side.starting_location.x
         u.y = side.starting_location.y
         u.experience = u.experience / 2
         anim:add(u, "levelin", "")
         wesnoth.units.to_map(u)
         anim:run()
+        side.variables.dead_leader = nil
       end
     end,
 })
