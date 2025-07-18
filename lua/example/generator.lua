@@ -30,7 +30,8 @@ Gen = {
 }
 
 function Gen:border_height(hex)
-  hex.height = - mathx.random(1, 2)
+  Ocean:add_hex(hex)
+  hex.height = - mathx.min(2, mathx.floor(mathx.random(1, 6) / 2))
 end
 
 function Gen:fjord_height(hex)
@@ -62,7 +63,7 @@ function Gen:height_map()
   while not hex.height do
     set_height(self, hex)
     if hex.biome and hex.height < -1 then
-      hex.biome:remove_hex(hex)
+      Ocean:add_hex(hex)
     end
     x, y = v:translate(x, y)
     hex = self.map:get(x, y)
@@ -155,7 +156,7 @@ end
 function Gen:place_encampments()
   local hexes = Hex.Set:new(
     filter(
-      Predicate:has("biome"),
+      function(h) return h.biome and h.biome.keep end,
       chain(self.center:circle(2), self.center:circle(3))
     )
   )
@@ -219,7 +220,7 @@ function Gen:make(cfg)
     filter(
       function(h)
         return h.height >= 0 and h:distance(self.center) >= mathx.floor(cfg.width / 4)
-          and all(function(n) return n.biome.name == "meadows" end, h:in_circle(1))
+          and all(function(n) return n.biome and n.biome.name == "meadows" end, h:in_circle(1))
       end,
       Biomes.meadows.hexes:iter()
     )

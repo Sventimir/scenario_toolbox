@@ -1,7 +1,6 @@
 Biome = require("scenario_toolbox/lua/map/biome")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
-
 function village_mod(prob, hex)
   if hex.height >= 0 then
     if any(function(h) h:has_feature("village") end, hex:circle(1)) then
@@ -24,6 +23,13 @@ function forest_mod(prob, hex)
     return arith.Ratio.zero
   end
 end
+
+Ocean = Biome:new("ocean")
+Ocean.heights = {
+  [-2] = "Wo",
+  [-1] = "Ww",
+  [0]  = "Wwr",
+}
 
 Meadows = Biome:new("meadows")
 Meadows.heights = {
