@@ -3,10 +3,19 @@ local Predicate = require("scenario_toolbox/lua/lib/predicate")
 
 local Hex = {}
 
-function Hex:new(map, x, y, terrain)
-  local this = setmetatable({ map = map, x = x, y = y, terrain = terrain }, self)
+function Hex:new(map, x, y, biome)
+  local this = {
+      map = map,
+      x = x,
+      y = y,
+      height = nil,
+      terrain = "_off^_usr",
+  }
   self.__index = self
-  return this
+  if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
+    biome:add_hex(this)
+  end
+  return setmetatable(this, self)
 end
 
 function Hex:from_wesnoth(hex)
@@ -53,6 +62,10 @@ end
 
 function Hex:distance(other)
   return (self:as_vec() - other:as_vec()):length()
+end
+
+function Hex:has_feature(name)
+  return self.feature and (not name or self.feature.name == name)
 end
 
 Hex.Set = {}

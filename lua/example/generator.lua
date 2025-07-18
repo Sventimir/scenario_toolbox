@@ -10,48 +10,6 @@ Spawn = require("scenario_toolbox/lua/units/spawn")
 Biomes = require("scenario_toolbox/lua/example/biomes")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
 
-GenHex = Hex:new()
-GenHex.__index = GenHex
-
-function GenHex:new(map, x, y, biome)
-  local this = setmetatable({
-      map = map,
-      x = x,
-      y = y,
-      height = nil,
-      terrain = "_off^_usr"
-  }, self)
-  if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
-    biome:add_hex(this)
-  end
-  return this
-end
-
-function GenHex:show_height()
-  if not self.height then
-    return "x"
-  elseif self.height >= 0 then
-    return string.format("[38;5;2m%i[0m", self.height)
-  else
-    return string.format("[38;5;1m%i[0m", - self.height)
-  end
-end
-
-function GenHex:show_coord()
-  if self.x == self.y then
-    return self.x % 10
-  else
-    return " "
-  end
-end
-
-function GenHex:has_feature(name)
-  return self.feature and (not name or self.feature.name == name)
-end
-
-GenHex.show = GenHex.show_biome
-
-Map.Hex = GenHex
 
 function Item:forsaken_altar(hex)
   return self:new("altar-" .. hex.biome.name, hex, {
