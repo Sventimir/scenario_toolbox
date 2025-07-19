@@ -1,37 +1,15 @@
 Biome = require("scenario_toolbox/lua/map/biome")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
-function village_mod(prob, hex)
-  if hex.height >= 0 then
-    if any(function(h) h:has_feature("village") end, hex:circle(1)) then
-      return Ratio.zero
-    else
-      return prob
-    end
-  else
-    return arith.Ratio.zero
-  end
-end
 
-function forest_mod(prob, hex)
-  if hex.height >= 0  and hex.height < 2 then
-    local near_forests = count(
-      filter(function(h) return h:has_feature("forest") end, hex:circle(1))
-    )
-    return arith.Ratio:new(prob.num + near_forests, prob.denom)
-  else
-    return arith.Ratio.zero
-  end
-end
-
-Ocean = Biome:new("ocean")
+Ocean = Biome:new("ocean", 1)
 Ocean.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
   [0]  = "Wwr",
 }
 
-Meadows = Biome:new("meadows")
+Meadows = Biome:new("meadows", 100)
 Meadows.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
@@ -39,13 +17,32 @@ Meadows.heights = {
   [1]  = "Hh",
   [2]  = "Mm",
 }
-Meadows:add_feat("village", arith.Ratio:new(1, 50), { "Vhr", "Vhhr" }, village_mod)
 Meadows:add_feat(
-  "forest",
-  arith.Ratio:new(1, 5),
-  { "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds",
-  "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fds", "Fdf", "Fet" },
-  forest_mod
+  Biome.Feature.neighbourhood_overlay(
+    "forest", 1,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+        return 0
+      else
+        return 50 + 2 * neighbours
+      end
+    end,
+    { { terrain = "Fds", weight = 4 }, { terrain = "Fdf", weight = 4 },
+      { terrain = "Fet", weight = 1 } }
+  )
+)
+Meadows:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "village", 5,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+        return 0
+      else
+        return mathx.max(3 - neighbours, 0)
+      end
+    end,
+    { { terrain = "Vhr", weight = 1 }, { terrain = "Vhhr", weight = 1 } }
+  )
 )
 Meadows.keep = "Ker"
 Meadows.camp = "Cer"
@@ -66,7 +63,7 @@ Meadows.spawn = {
   })
 }
 
-Forest = Biome:new("forest")
+Forest = Biome:new("forest", 100)
 Forest.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
@@ -74,11 +71,23 @@ Forest.heights = {
   [1]  = "Hh",
   [2]  = "Md",
 }
-Forest:add_feat("forest", arith.Ratio:new(9, 10), { "Fp" }, forest_mod)
+Forest:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "forest", 1,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+        return 0
+      else
+        return 87 + neighbours
+      end
+    end,
+    { { terrain = "Fp", weight = 1 } }
+  )
+)
 Forest.keep = "Kv"
 Forest.camp = "Cv"
 
-Swamp = Biome:new("swamp")
+Swamp = Biome:new("swamp", 100)
 Swamp.heights = {
   [-2] = "Ww",
   [-1] = "Ss",
@@ -86,16 +95,36 @@ Swamp.heights = {
   [1]  = "Sm",
   [2]  = "Hhd",
 }
-Swamp:add_feat("village", arith.Ratio:new(1, 100), { "Vhs" }, village_mod)
 Swamp:add_feat(
-  "forest",
-  arith.Ratio:new(1, 10),
-  { "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fdw", "Fmw", "Fetd" },
-  forest_mod
+  Biome.Feature.neighbourhood_overlay(
+    "forest", 1,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+        return 0
+      else
+        return 30 + neighbours
+      end
+    end,
+    {
+      { terrain = "Fdw", weight = 4 },
+      { terrain = "Fmw", weight = 4 },
+      { terrain = "Fetd", weight = 1 }
+    }
+  )
+)
+Swamp:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "village", 5,
+    function(hex, neighbours)
+      return mathx.max(0, 1 - neighbours)
+    end,
+    { { terrain = "Vhs", weight = 1 } }
+  )
 )
 Swamp.keep = "Khs"
 Swamp.camp = "Chs"
-Snow = Biome:new("snow")
+
+Snow = Biome:new("snow", 100)
 Snow.heights = {
   [-2] = "Wo",
   [-1] = "Ai",
@@ -103,17 +132,41 @@ Snow.heights = {
   [1]  = "Ha",
   [2]  = "Ms",
 }
-Snow:add_feat("village", arith.Ratio:new(1, 100), { "Voa", "Vaa" }, village_mod)
 Snow:add_feat(
-  "forest",
-  arith.Ratio:new(3, 10), 
-  { "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Fpa", "Fda", "Fma", "Feta" },
-  forest_mod
+  Biome.Feature.neighbourhood_overlay(
+    "forest", 1,
+    function(hex, neighbours)
+      if hex.height < -1 or hex.height > 1 then
+        return 0
+      else
+        return 30 + neighbours
+      end
+    end,
+    {
+      { terrain = "Fpa", weight = 3 },
+      { terrain = "Fda", weight = 3 },
+      { terrain = "Fma", weight = 3 },
+      { terrain = "Feta", weight = 1 }
+    }
+  )
+)
+Snow:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "village", 5,
+    function(hex, neighbours)
+      if hex.height < -1 or hex.height > 1 then
+       return 0
+      else
+        return 2 - neighbours
+      end
+    end,
+    { { terrain = "Voa", weight = 1 }, { terrain = "Vaa", weight = 1} }
+  )
 )
 Snow.keep = "Koa"
 Snow.camp = "Coa"
 
-Desert = Biome:new("desert")
+Desert = Biome:new("desert", 100)
 Desert.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
@@ -121,8 +174,32 @@ Desert.heights = {
   [1]  = "Hd",
   [2]  = "Mdd",
 }
-Desert:add_feat("village", arith.Ratio:new(1, 100), { "Vdt", "Vdr" }, village_mod)
-Desert:add_feat("forest", arith.Ratio:new(1, 5), { "Ftd" }, forest_mod)
+Desert:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "forest", 1,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+        return 0
+      else
+        return 23 + neighbours
+      end
+    end,
+    { { terrain = "Ftd", weight = 1 }  }
+  )
+)
+Desert:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "village", 5,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+       return 0
+      else
+        return 2 - neighbours
+      end
+    end,
+    { { terrain = "Vdt", weight = 1 }, { terrain = "Vdr", weight = 1} }
+  )
+)
 Desert.keep = "Kdr"
 Desert.camp = "Cdr"
 

@@ -3,11 +3,11 @@ local Hex = require("scenario_toolbox/lua/map/hex")
 local Biome = {}
 Biome.__index = Biome
 
-function Biome:new(name)
+function Biome:new(name, total_feat_weight)
   local this = {
       name = name,
       hexes = Hex.Set:new(),
-      features = { },
+      features = self.FeatureSet:new(total_feat_weight),
       spawn = { active = { }, passive = { } },
   }
   return setmetatable(this, self)
@@ -15,10 +15,10 @@ end
 
 function Biome:terrain(hex)
   local base = self.heights[hex.height] or "_off^_usr"
-  local overlay = hex.feature
-    and "^" .. hex.feature.overlays[mathx.random(#hex.feature.overlays)]
+  local overlay = hex.overlay
+    and "^" .. hex.overlay
     or ""
-  return string.format("%s%s", base, overlay)
+  return base .. (hex.overlay and ("^" .. hex.overlay) or "")
 end
 
 function Biome:belongs(hex)
@@ -49,38 +49,79 @@ function Biome:time_area(timedef)
   return "time_area", area
 end
 
-function Biome:add_feat(name, probability, overlays, modifier)
-  table.insert(self.features, self.Feature:new(name, probability, overlays, modifier))
-end
-
-function Biome:apply_features(hex)
-  for feat in iter(self.features) do
-    if feat:apply(hex) then return true end
-  end
-  return false
+function Biome:add_feat(feat)
+  self.features:add(feat)
 end
 
 Biome.Feature = {}
-Biome.Feature.__index = Biome.Feature
 
-function Biome.Feature:new(name, probability, overlays, modifier)
-  local feat = {
-    name = name,
-    probability = probability,
-    overlays = overlays,
-    modifier = modifier
-  }
-  setmetatable(feat, self)
-  return feat
+function Biome.Feature.overlay(name, weigh, terrain)
+  local ov = { name = name, total = 0, weigh = weigh }
+
+  for t in iter(terrain) do
+    table.insert(ov, t)
+    ov.total = ov.total + t.weight
+  end
+
+  function ov:apply(hex)
+    local roll = mathx.random(0, self.total - 1)
+    for t in iter(self) do
+      if roll < t.weight then
+        hex.feature = self
+        hex.overlay = t.terrain
+      else
+        roll = roll - t.weight
+      end
+    end
+  end
+
+  return ov
 end
 
-function Biome.Feature:apply(hex)
-  local chance = self.modifier(self.probability, hex)
-  if chance:prob_check() then
-    hex.feature = self
-    return true
-  else
-    return false
+function Biome.Feature.neighbourhood_overlay(name, radius, weight, terrain)
+  return Biome.Feature.overlay(
+    name,
+    function(self, hex)
+      local neighbours = filter(
+        function(h) return h.feature and h.feature.name == self.name end,
+        hex:in_circle(radius)
+      )
+      return { weight = weight(hex, count(neighbours)), feat = self }
+    end,
+    terrain
+  )
+end
+
+Biome.FeatureSet = {}
+Biome.FeatureSet.__index = Biome.FeatureSet
+
+function Biome.FeatureSet:new(total_weight)
+  return setmetatable({ total_weight = total_weight or 1 }, self)
+end
+
+function Biome.FeatureSet:add(feat)
+  table.insert(self, feat)
+end
+
+function Biome.FeatureSet:apply(hex)
+  local feats = {}
+  local total = 0
+  for feat in iter(self) do
+    f = feat:weigh(hex)
+    table.insert(feats, f)
+    total = total + f.weight
+  end
+  -- base_weight makes it so that total should be greater than 0
+  -- it also adds a chance that no feature will be selected (nil
+  -- will be returned).
+  local roll = mathx.random(0, mathx.max(total, self.total_weight) - 1)
+  for feat in iter(feats) do
+    if roll < feat.weight then
+      feat.feat:apply(hex, roll)
+      return feat.feature
+    else
+      roll = roll - feat.weight
+    end
   end
 end
 

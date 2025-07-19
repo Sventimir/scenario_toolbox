@@ -25,8 +25,3 @@ cfg = WML:new({
 m = Gen:make(cfg)
 
 print(m:__tostring())
-
-hex = Gen.map:get(3, 5)
-print(hex:__tostring(), hex.biome.name)
-p = Predicate:has("name", "meadows"):contra_map(get("biome"))
-print(p(hex))

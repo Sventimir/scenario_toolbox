@@ -213,7 +213,7 @@ function Gen:make(cfg)
   self:expand_biomes()
   
   for hex in self.map:iter() do
-    if hex.biome then hex.biome:apply_features(hex) end
+    if hex.biome then hex.biome.features:apply(hex) end
   end
   
   local potential_meadows_altar = Hex.Set:new(
@@ -258,8 +258,6 @@ function Gen:make(cfg)
   for hex in self.map:iter() do
     hex.terrain = hex.biome and hex.biome:terrain(hex) or "Wo"
   end
-
-  self:place_encampments()
 
   self.units = Hex.Set:new()
 
