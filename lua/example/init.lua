@@ -7,7 +7,7 @@ local Biomes = require("scenario_toolbox/lua/example/biomes")
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
 local enemies = wesnoth.sides.find({ wml.tag["not"]({ team_name = "Bohaterowie" }) })
-local altars = map(function(s) return s.variables.altar end, iter(enemies))
+local altars = filter_map(function(s) return s.variables.altar end, iter(enemies))
 local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
@@ -169,7 +169,7 @@ wesnoth.game_events.add({
       local side = wesnoth.sides[wml.variables.side_number]
       local biome = Biomes[side.variables.biome]
       local time = wesnoth.schedule.get_time_of_day(biome.name)
-      if wml.variables.active == biome.name then -- active spawn
+      if wml.variables.active == biome.name and side.variables.altar then -- active spawn
         local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
         local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
         spawn:spawn(altar, side.side)

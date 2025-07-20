@@ -24,7 +24,7 @@ local function hex_height(hex)
 end
 
 Gen = {
-  side_color = { "red", "blue", "purple", "green", "brown", "black", "white", "orange" },
+  side_color = { "red", "blue", "purple" },
   biomes = { Biomes.forest, Biomes.swamp, Biomes.desert, Biomes.snow },
   biome_centers = {},
 }
@@ -170,7 +170,7 @@ function Gen:place_encampments()
       filter_map(
         function(d)
           local h = self.center:translate(v:scale(d))
-          if h.biome and all(function(name) return Biomes[name].altar.hex ~= h end, pairs(Biomes)) then
+          if h.biome and all(function(name) return Biomes[name].altar ~= h end, pairs(Biomes)) then
             return h
           end
         end,
@@ -213,7 +213,7 @@ function Gen:make(cfg)
   self:expand_biomes()
   
   for hex in self.map:iter() do
-    if hex.biome then hex.biome.features:apply(hex) end
+    if hex.biome then hex.biome.features:assign(hex) end
   end
   
   local potential_meadows_altar = Hex.Set:new(
@@ -257,6 +257,9 @@ function Gen:make(cfg)
   })
   for hex in self.map:iter() do
     hex.terrain = hex.biome and hex.biome:terrain(hex) or "Wo"
+    if hex.feature then
+      hex.feature:apply(hex, s)
+    end
   end
 
   self.units = Hex.Set:new()
@@ -299,11 +302,11 @@ function Gen:make(cfg)
     side_counter = i
   end
 
-  for i, biome in ipairs(Biomes) do
+  for biome in iter(Biomes) do
     side_counter = side_counter + 1
     boss = Side:new({
         side = side_counter,
-        color = self.side_color[i + 3],
+        color = biome.colour,
         faction = "Custom",
         controller = "ai",
         allow_player = false,
@@ -316,18 +319,19 @@ function Gen:make(cfg)
         team_name = biome.name,
         defeat_condition = "never",
     })
-    local vars = WML:tag("variables", {
-                           biome = biome.name,
-                           WML:tag("altar", {
-                                     x = biome.altar.hex.x,
-                                     y = biome.altar.hex.y
-                           })
-    })
+    if biome.altar then
+      local vars = WML:tag("variables", {
+                             biome = biome.name,
+                             WML:tag("altar", {
+                                       x = biome.altar.x,
+                                       y = biome.altar.y
+                             })
+      })
+      boss:insert(vars)
+    end
     boss:merge(self:initial_spawn(biome, side_counter))
-    boss:insert(vars)
 
     s:insert("side", boss)
-    s:insert(biome.altar:wml())
   end
 
   s:insert(self.altar:wml())

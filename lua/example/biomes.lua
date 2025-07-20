@@ -2,12 +2,46 @@ Biome = require("scenario_toolbox/lua/map/biome")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
 
+local Altar = setmetatable({ name = "altar" }, Biome.Feature)
+
+function Altar:weigh(hex)
+  local near_other_biome = any(
+    function(h)
+      return h.biome.name ~= hex.biome.name
+    end,
+    hex:in_circle(3)
+  )
+  if hex.height < 0 or near_other_biome then
+    return { weight = 0, feat = self }
+  else
+    return { weight = 100, feat = self }
+  end
+end
+
+function Altar:assign(hex)
+  hex.feature = self
+  hex.biome.features:remove(self.name)
+end
+
+function Altar:apply(hex, scenario)
+  local wml = {
+      x = hex.x,
+      y = hex.y,
+      name = "altar-" .. hex.biome.name,
+      image = "items/altar-evil.png",
+      visible_in_fog = true,
+  }
+  scenario:insert("item", wml)
+  hex.biome.altar = hex
+end
+
 Ocean = Biome:new("ocean", 1)
 Ocean.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
   [0]  = "Wwr",
 }
+Ocean.colour = "teal"
 
 Meadows = Biome:new("meadows", 100)
 Meadows.heights = {
@@ -17,6 +51,8 @@ Meadows.heights = {
   [1]  = "Hh",
   [2]  = "Mm",
 }
+Meadows.colour = "green"
+Meadows:add_feat(Altar)
 Meadows:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
@@ -71,6 +107,7 @@ Forest.heights = {
   [1]  = "Hh",
   [2]  = "Md",
 }
+Forest.colour = "brown"
 Forest:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
@@ -95,6 +132,7 @@ Swamp.heights = {
   [1]  = "Sm",
   [2]  = "Hhd",
 }
+Swamp.colour = "black"
 Swamp:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
@@ -132,6 +170,7 @@ Snow.heights = {
   [1]  = "Ha",
   [2]  = "Ms",
 }
+Snow.colour = "white"
 Snow:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
@@ -174,6 +213,7 @@ Desert.heights = {
   [1]  = "Hd",
   [2]  = "Mdd",
 }
+Desert.colour = "orange"
 Desert:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,

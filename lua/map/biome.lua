@@ -14,11 +14,7 @@ function Biome:new(name, total_feat_weight)
 end
 
 function Biome:terrain(hex)
-  local base = self.heights[hex.height] or "_off^_usr"
-  local overlay = hex.overlay
-    and "^" .. hex.overlay
-    or ""
-  return base .. (hex.overlay and ("^" .. hex.overlay) or "")
+  return self.heights[hex.height] or "_off^_usr"
 end
 
 function Biome:belongs(hex)
@@ -54,6 +50,11 @@ function Biome:add_feat(feat)
 end
 
 Biome.Feature = {}
+Biome.Feature.__index = Biome.Feature
+
+function Biome.Feature:assign(hex)
+  hex.feature = self
+end
 
 function Biome.Feature.overlay(name, weigh, terrain)
   local ov = { name = name, total = 0, weigh = weigh }
@@ -67,15 +68,15 @@ function Biome.Feature.overlay(name, weigh, terrain)
     local roll = mathx.random(0, self.total - 1)
     for t in iter(self) do
       if roll < t.weight then
-        hex.feature = self
-        hex.overlay = t.terrain
+        hex.terrain = hex.terrain .. "^" .. t.terrain
+        return
       else
         roll = roll - t.weight
       end
     end
   end
 
-  return ov
+  return setmetatable(ov, Biome.Feature)
 end
 
 function Biome.Feature.neighbourhood_overlay(name, radius, weight, terrain)
@@ -92,6 +93,20 @@ function Biome.Feature.neighbourhood_overlay(name, radius, weight, terrain)
   )
 end
 
+Biome.Feature.altar = setmetatable({ name = "altar" }, Biome.Feature)
+
+function Biome.Feature:apply(hex, scenario)
+  local wml = {
+      x = hex.x,
+      y = hex.y,
+      name = "altar-" .. hex.biome.name,
+      image = "items/altar-evil.png",
+      visible_in_fog = true,
+  }
+  scenario:insert("item", wml)
+  hex.biome.altar = hex
+end
+
 Biome.FeatureSet = {}
 Biome.FeatureSet.__index = Biome.FeatureSet
 
@@ -103,7 +118,17 @@ function Biome.FeatureSet:add(feat)
   table.insert(self, feat)
 end
 
-function Biome.FeatureSet:apply(hex)
+function Biome.FeatureSet:remove(name)
+  local i = 1
+  while self[i] and self[i].name ~= name do
+    i = i + 1
+  end
+  if i <= #self then
+    return table.remove(self, i)
+  end
+end
+
+function Biome.FeatureSet:assign(hex)
   local feats = {}
   local total = 0
   for feat in iter(self) do
@@ -117,7 +142,7 @@ function Biome.FeatureSet:apply(hex)
   local roll = mathx.random(0, mathx.max(total, self.total_weight) - 1)
   for feat in iter(feats) do
     if roll < feat.weight then
-      feat.feat:apply(hex, roll)
+      feat.feat:assign(hex, roll)
       return feat.feature
     else
       roll = roll - feat.weight
