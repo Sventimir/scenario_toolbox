@@ -7,6 +7,7 @@ Spawn.__index = Spawn
 if wesnoth and wesnoth.current then -- this only exists during game
   function Spawn.valid_location(hex)
     return wesnoth.map.on_board(wesnoth.current.map, hex)
+      and not wesnoth.units.get(hex.x, hex.y)
   end
 else
   function Spawn.valid_location(hex)
