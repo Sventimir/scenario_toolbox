@@ -145,6 +145,7 @@ wesnoth.game_events.add({
         local u = wesnoth.units.create(side.variables.dead_leader)
         u.x = side.starting_location.x
         u.y = side.starting_location.y
+        u.hitpoints = mathx.min(10, u.max_hitpoints)
         u.experience = u.experience / 2
         anim:add(u, "levelin", "")
         wesnoth.units.to_map(u)

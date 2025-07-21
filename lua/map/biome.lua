@@ -56,6 +56,18 @@ function Biome.Feature:assign(hex)
   hex.feature = self
 end
 
+function Biome.Feature:apply(hex, scenario)
+  local wml = {
+      x = hex.x,
+      y = hex.y,
+      name = "altar-" .. hex.biome.name,
+      image = "items/altar-evil.png",
+      visible_in_fog = true,
+  }
+  scenario:insert("item", wml)
+  hex.biome.altar = hex
+end
+
 function Biome.Feature.overlay(name, weigh, terrain)
   local ov = { name = name, total = 0, weigh = weigh }
 
@@ -91,20 +103,6 @@ function Biome.Feature.neighbourhood_overlay(name, radius, weight, terrain)
     end,
     terrain
   )
-end
-
-Biome.Feature.altar = setmetatable({ name = "altar" }, Biome.Feature)
-
-function Biome.Feature:apply(hex, scenario)
-  local wml = {
-      x = hex.x,
-      y = hex.y,
-      name = "altar-" .. hex.biome.name,
-      image = "items/altar-evil.png",
-      visible_in_fog = true,
-  }
-  scenario:insert("item", wml)
-  hex.biome.altar = hex
 end
 
 Biome.FeatureSet = {}
