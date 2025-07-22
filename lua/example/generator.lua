@@ -30,8 +30,8 @@ Gen = {
 }
 
 function Gen:border_height(hex)
-  Ocean:add_hex(hex)
   hex.height = - mathx.min(2, mathx.floor(mathx.random(1, 6) / 2))
+  Ocean:add_hex(hex)
 end
 
 function Gen:fjord_height(hex)
@@ -64,6 +64,8 @@ function Gen:height_map()
     set_height(self, hex)
     if hex.biome and hex.height < -1 then
       Ocean:add_hex(hex)
+    else
+      Meadows:add_hex(hex)
     end
     x, y = v:translate(x, y)
     hex = self.map:get(x, y)
@@ -141,48 +143,6 @@ function Gen:expand_biomes()
   end
 end
 
-function Gen:encampment(hex)
-  local v = Vec.unitary.random()
-  local rotations = { Vec.unitary.clockwise, Vec.unitary.counterclockwise }
-  local camp = { hex:translate(v), hex:translate(rotations[mathx.random(2)](v)) }
-  hex.terrain = hex.biome.keep
-  for h in iter(camp) do
-    h.biome = nil
-    h.terrain = hex.biome.camp
-  end
-  hex.biome = nil
-end
-
-function Gen:place_encampments()
-  local hexes = Hex.Set:new(
-    filter(
-      function(h) return h.biome and h.biome.keep end,
-      chain(self.center:circle(2), self.center:circle(3))
-    )
-  )
-  self:encampment(hexes:random())
-
-  local dim = mathx.min(self.map.height, self.map.width)
-  local min_dist = mathx.max(dim / 5, 5)
-  local max_dist = dim / 2 - 5
-  for v in Vec.unitary.each() do
-    hexes = Hex.Set:new(
-      filter_map(
-        function(d)
-          local h = self.center:translate(v:scale(d))
-          if h.biome and all(function(name) return Biomes[name].altar ~= h end, pairs(Biomes)) then
-            return h
-          end
-        end,
-        take_while(function(d) return d < max_dist end, drop(min_dist, arith.nats()))
-      )
-    )
-    if #hexes > 0 then
-      self:encampment(hexes:random())
-    end
-  end
-end
-
 function Gen:initial_spawn(biome, side)
   local wml = WML:new()
   local available_hexes = Hex.Set:new(biome.hexes:iter())
@@ -213,7 +173,12 @@ function Gen:make(cfg)
   self:expand_biomes()
   
   for hex in self.map:iter() do
-    if hex.biome then hex.biome.features:assign(hex) end
+    if hex.biome then
+      hex.biome.features:assign(hex)
+      if hex.feature then
+        hex.feature:apply(hex, s)
+      end
+    end
   end
   
   local potential_meadows_altar = Hex.Set:new(
@@ -255,12 +220,6 @@ function Gen:make(cfg)
                           image = "items/altar.png",
                           visible_in_fog = true
   })
-  for hex in self.map:iter() do
-    hex.terrain = hex.biome and hex.biome:terrain(hex) or "Wo"
-    if hex.feature then
-      hex.feature:apply(hex, s)
-    end
-  end
 
   self.units = Hex.Set:new()
 

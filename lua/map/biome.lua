@@ -6,6 +6,7 @@ Biome.__index = Biome
 function Biome:new(name, total_feat_weight)
   local this = {
       name = name,
+      heights = { },
       hexes = Hex.Set:new(),
       features = self.FeatureSet:new(total_feat_weight),
       spawn = { active = { }, passive = { } },
@@ -26,6 +27,7 @@ function Biome:add_hex(hex)
     hex.biome:remove_hex(hex)
   end
   hex.biome = self
+  hex.terrain = self:terrain(hex)
   self.hexes:add(hex)
 end
 
@@ -141,7 +143,7 @@ function Biome.FeatureSet:assign(hex)
   for feat in iter(feats) do
     if roll < feat.weight then
       feat.feat:assign(hex, roll)
-      return feat.feature
+      return feat.feat
     else
       roll = roll - feat.weight
     end

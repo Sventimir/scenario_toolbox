@@ -9,7 +9,6 @@ function Hex:new(map, x, y, biome)
       x = x,
       y = y,
       height = nil,
-      terrain = "_off^_usr",
   }
   self.__index = self
   if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
