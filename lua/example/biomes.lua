@@ -11,7 +11,8 @@ function Altar:weigh(hex)
     end,
     hex:in_circle(3)
   )
-  if hex.height < 0 or near_other_biome then
+  local dist = hex:distance(Biome.Feature.center)
+  if hex.height < 0 or near_other_biome or dist < 10 then
     return { weight = 0, feat = self }
   else
     return { weight = 100, feat = self }
