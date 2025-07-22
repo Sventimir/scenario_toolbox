@@ -43,7 +43,7 @@ Ocean.heights = {
 }
 Ocean.colour = "teal"
 
-Meadows = Biome:new("meadows", 100)
+Meadows = Biome:new("meadows", 200)
 Meadows.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
@@ -60,7 +60,7 @@ Meadows:add_feat(
       if hex.height < 0 or hex.height > 1 then
         return 0
       else
-        return 50 + 2 * neighbours
+        return 100 + 2 * neighbours
       end
     end,
     { { terrain = "Fds", weight = 4 }, { terrain = "Fdf", weight = 4 },
@@ -69,7 +69,7 @@ Meadows:add_feat(
 )
 Meadows:add_feat(
   Biome.Feature.neighbourhood_overlay(
-    "village", 5,
+    "village", 10,
     function(hex, neighbours)
       if hex.height < 0 or hex.height > 1 then
         return 0
@@ -80,8 +80,34 @@ Meadows:add_feat(
     { { terrain = "Vhr", weight = 1 }, { terrain = "Vhhr", weight = 1 } }
   )
 )
-Meadows.keep = "Ker"
-Meadows.camp = "Cer"
+Meadows:add_feat(
+  Biome.Feature.castle(
+    "Ker", "Cer",
+    function(feat, hex)
+      local center_dist = hex:distance(Biome.Feature.center)
+      if hex.height < 0 or center_dist < 7 then
+        return { weight = 0, feat = feat }
+      elseif center_dist == 3 then
+        return { weight = feat.central_camp and 0 or 100, feat = feat }
+      else
+        return { weight = 1, feat = feat }
+      end
+    end,
+    function(self, keep)
+      if keep:distance(Biome.Feature.center) == 3 then
+        self.central_camp = true
+      end
+      local hexes = filter(
+        function(h)
+          return not h.feature and h.height >= 0
+        end,
+        keep:circle(1)
+      )
+      return take(mathx.random(2, 3), hexes)
+    end,
+    { central_camp = false }
+  )
+)
 Meadows.spawn = {
   passive = { 
     Spawn:family("Woodland Boar", "Piglet", 2, 4),

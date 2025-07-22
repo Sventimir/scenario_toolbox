@@ -62,11 +62,10 @@ function Gen:height_map()
 
   while not hex.height do
     set_height(self, hex)
-    if hex.biome and hex.height < -1 then
+    if hex.height < -1 then
       Ocean:add_hex(hex)
-    else
-      Meadows:add_hex(hex)
     end
+    hex.biome:add_hex(hex) -- this is a hacky way of setting terrain
     x, y = v:translate(x, y)
     hex = self.map:get(x, y)
     if not hex or hex.height then
@@ -84,6 +83,7 @@ function Gen:height_map()
 
   self.center = hex
   self.center.height = 0
+  self.center.terrain = self.center.biome.heights[0]
 end
 
 function Gen:gen_biome_centers()
@@ -169,57 +169,20 @@ function Gen:make(cfg)
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
   self:height_map()
+  self.center.feature = Item:new("altar", self.center, {
+                                   image = "items/altar.png",
+                                   visible_in_fog = true
+  })
   self:gen_biome_centers()
   self:expand_biomes()
   
+  Biome.Feature.center = self.center
   for hex in self.map:iter() do
     if hex.biome then
-      hex.biome.features:assign(hex)
-      if hex.feature then
-        hex.feature:apply(hex, s)
-      end
+      f = hex.biome.features:assign(hex)
+      if f then f:apply(hex, s) end
     end
   end
-  
-  local potential_meadows_altar = Hex.Set:new(
-    filter(
-      function(h)
-        return h.height >= 0 and h:distance(self.center) >= mathx.floor(cfg.width / 4)
-          and all(function(n) return n.biome and n.biome.name == "meadows" end, h:in_circle(1))
-      end,
-      Biomes.meadows.hexes:iter()
-    )
-  )
-  self.meadows_altar = potential_meadows_altar:random()
-  Biomes.meadows.altar = Item:forsaken_altar(self.meadows_altar)
-
-  for biome in iter(self.biomes) do
-    local r = 3
-    while not biome.altar do
-      local available_hexes = Hex.Set:new(
-        filter(
-          function(h)
-            return h.height >= 0 and all(
-              function(n)
-                return n.biome and n.biome.name == biome.name
-              end,
-              h:in_circle(r))
-          end,
-          biome.hexes:iter()
-        )
-      )
-      if available_hexes.size > 0 then
-        biome.altar = Item:forsaken_altar(available_hexes:random())
-      else
-        r = r - 1
-      end
-    end
-  end
-  
-  self.altar = Item:new("altar", self.center, {
-                          image = "items/altar.png",
-                          visible_in_fog = true
-  })
 
   self.units = Hex.Set:new()
 
@@ -293,7 +256,7 @@ function Gen:make(cfg)
     s:insert("side", boss)
   end
 
-  s:insert(self.altar:wml())
+  s:insert(self.center.feature:wml())
   s:insert("variables", { active = "meadows" })
 
   s:insert("event", {

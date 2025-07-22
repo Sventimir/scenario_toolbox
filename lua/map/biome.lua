@@ -107,6 +107,33 @@ function Biome.Feature.neighbourhood_overlay(name, radius, weight, terrain)
   )
 end
 
+function Biome.Feature.castle(keep, castle, weigh, expand, extra)
+  local c = {
+    name = "castle",
+    keep = keep,
+    castle = castle,
+    expand = expand,
+    weigh = weigh,
+    extra = extra or {},
+  }
+
+  function c:apply(hex)
+    local castle = self:expand(hex)
+    if castle then
+      hex.terrain = self.keep
+      hex.feature = self
+      for h in castle do
+        h.terrain = self.castle
+        h.feature = self
+      end
+    else
+      hex.feature = nil
+    end
+  end
+
+  return setmetatable(c, Biome.Feature)
+end
+
 Biome.FeatureSet = {}
 Biome.FeatureSet.__index = Biome.FeatureSet
 
@@ -129,6 +156,9 @@ function Biome.FeatureSet:remove(name)
 end
 
 function Biome.FeatureSet:assign(hex)
+  if hex.feature then
+    return
+  end
   local feats = {}
   local total = 0
   for feat in iter(self) do
