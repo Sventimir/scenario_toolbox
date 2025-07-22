@@ -241,16 +241,14 @@ function Gen:make(cfg)
         team_name = biome.name,
         defeat_condition = "never",
     })
+    local vars = WML:tag("variables", { biome = biome.name })
     if biome.altar then
-      local vars = WML:tag("variables", {
-                             biome = biome.name,
-                             WML:tag("altar", {
-                                       x = biome.altar.x,
-                                       y = biome.altar.y
-                             })
+      vars:insert("altar", {
+                x = biome.altar.x,
+                y = biome.altar.y
       })
-      boss:insert(vars)
     end
+    boss:insert(vars)
     boss:merge(self:initial_spawn(biome, side_counter))
 
     s:insert("side", boss)
