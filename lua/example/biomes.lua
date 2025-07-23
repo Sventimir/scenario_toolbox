@@ -25,14 +25,14 @@ function Altar:assign(hex)
 end
 
 function Altar:apply(hex, scenario)
-  local wml = {
+  local w = {
       x = hex.x,
       y = hex.y,
       name = "altar-" .. hex.biome.name,
       image = "items/altar-evil.png",
       visible_in_fog = true,
   }
-  scenario:insert("item", wml)
+  table.insert(scenario, wml.tag.item(w))
   hex.biome.altar = hex
 end
 

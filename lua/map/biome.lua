@@ -44,7 +44,7 @@ function Biome:time_area(timedef)
   for time in timedef do
     area = wml.merge(area, { wml.tag.time(time) }, "append")
   end
-  return "time_area", area
+  return wml.tag.time_area(area)
 end
 
 function Biome:add_feat(feat)
@@ -138,12 +138,13 @@ function Biome.Feature.building(name, image, weigh, init)
   local b = { name = name, img = image, weigh = weigh, init = init }
 
   function b:apply(hex, scenario)
-    scenario:insert("item", {
-                      x = hex.x, y = hex.y,
-                      name = self.name,
-                      image = self.img,
-                      visible_in_fog = true,
-    })
+    local item = {
+      x = hex.x, y = hex.y,
+      name = self.name,
+      image = self.img,
+      visible_in_fog = true,
+    }
+    table.insert(scenario, wml.tag.item(item))
     self:init(hex, scenario)
   end
 

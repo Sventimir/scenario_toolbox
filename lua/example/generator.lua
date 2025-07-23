@@ -3,20 +3,9 @@ CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
 Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
 Biome = require("scenario_toolbox/lua/map/biome")
-Side = require("scenario_toolbox/lua/wml/side")
-Scenario = require("scenario_toolbox/lua/wml/scenario")
-Item = require("scenario_toolbox/lua/wml/item")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Biomes = require("scenario_toolbox/lua/example/biomes")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
-
-
-function Item:forsaken_altar(hex)
-  return self:new("altar-" .. hex.biome.name, hex, {
-                    image = "items/altar-evil.png",
-                    visible_in_fog = true
-  })
-end
 
 
 local function hex_height(hex)
@@ -164,18 +153,22 @@ function Gen:initial_spawn(biome, side)
 end
 
 function Gen:make(cfg)
-  local s = Scenario:new(cfg:find("scenario", 1))
+  local s = wml.get_child(cfg, "scenario")
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
   self:height_map()
-  self.center.feature = Item:new("altar", self.center, {
-                                   image = "items/altar.png",
-                                   visible_in_fog = true
-  })
+  self.center.feature =
+    Biome.Feature.building(
+      "altar",
+      "items/altar.png",
+      function(self, hex) return { weight = 1000, feat = self } end,
+      function(self, hex, scenario) end
+    )
   self:gen_biome_centers()
   self:expand_biomes()
   
   Biome.Feature.center = self.center
+  self.center.feature:apply(self.center, s)
   for hex in self.map:iter() do
     if hex.biome then
       f = hex.biome.features:assign(hex)
@@ -194,10 +187,10 @@ function Gen:make(cfg)
 
   s.map_data = self.map:as_map_data()
 
-  local schedule = s:find("time")
-  s:insert(Biomes.meadows:time_area(iter(schedule)))
+  local schedule = wml.get_child(s, "time")
+  table.insert(s, Biomes.meadows:time_area(iter(schedule)))
   for biome in iter(self.biomes) do
-    s:insert(biome:time_area(iter(schedule)))
+    table.insert(s, biome:time_area(iter(schedule)))
   end
   local side_counter = 0
 
@@ -219,7 +212,7 @@ function Gen:make(cfg)
         team_name = "Bohaterowie",
         defeat_condition = "never",
     }
-    s:insert("side", side)
+    table.insert(s, wml.tag.side(side))
     side_counter = i
   end
 
@@ -254,21 +247,23 @@ function Gen:make(cfg)
     boss = wml.merge(boss, { wml.tag.variables(vars) }, "append")
     boss = wml.merge(boss, self:initial_spawn(biome, side_counter), "append")
 
-    s:insert("side", WML:new(boss))
+    table.insert(s, wml.tag.side(boss))
   end
 
-  s:insert(self.center.feature:wml())
-  s:insert("variables", { active = "meadows" })
+  table.insert(s, wml.tag.variables({ active = "meadows" }))
 
-  s:insert("event", {
-             name = "preload",
-             id = "preload",
-             first_time_only = false,
-             wml.tag.lua({
-                 code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
-             })
-  })
-
+  table.insert(
+    s,
+    wml.tag.event({
+        name = "preload",
+        id = "preload",
+        first_time_only = false,
+        wml.tag.lua({
+            code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
+        })
+    })
+  )
+  
   return s
 end
 
