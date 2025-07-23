@@ -1,7 +1,6 @@
 wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 local Hex = require("scenario_toolbox/lua/map/hex")
-local WML = require("scenario_toolbox/lua/wml/wml")
 local Biomes = require("scenario_toolbox/lua/example/biomes")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
@@ -14,63 +13,75 @@ meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 wesnoth.game_events.add({
     name = "start",
     id = "setup_micro_ai",
-    content = WML:new({
-        WML.micro_ai("swarm", boss.side, {
-                       WML.filter({ type = "Raven" }),
-                       WML:tag("avoid", {
-                                 WML.filter_location({
-                                     WML:tag("not", { area = "meadows" })
-                                 })
-                       }),
-                       enemy_distance = 3,
+    content = {
+        wml.tag.micro_ai({
+            ai_type = "swarm",
+            side = boss.side,
+            action = "add",
+            wml.tag.filter({ type = "Raven" }),
+            wml.tag.avoid({
+                wml.tag.filter_location({
+                    wml.tag["not"]({ area = "meadows" })
+                })
+            }),
+            enemy_distance = 3,
         }),
-        WML.micro_ai("big_animals", boss.side, {
-                       WML.filter({
-                           type="Giant Rat",
-                           WML.filter_location({
-                               WML:tag("not", { area = "boss-fight" })
-                           })
-                       }),
-                       WML.filter_location({ terrain = meadows_terrain }),
-                       WML:tag("filter_location_wander", { area = "meadows" })
+        wml.tag.micro_ai({
+          ai_type = "big_animals",
+          side = boss.side,
+          action = "add",
+          wml.tag.filter({
+              type="Giant Rat",
+              wml.tag.filter_location({
+                  wml.tag["not"]({ area = "boss-fight" })
+              })
+          }),
+          wml.tag.filter_location({ terrain = meadows_terrain }),
+          wml.tag.filter_location_wander({ area = "meadows" })
         }),
-        WML.micro_ai("forest_animals", boss.side, {
-                       tusker_type = "Woodland Boar",
-                       tusklet_type = "Piglet",
-                       deer_type = "Bay Horse",
-                       WML:tag("filter_location", { terrain = meadows_terrain .. ",Ww" })
+        wml.tag.micro_ai({
+            ai_type ="forest_animals",
+            side = boss.side,
+            action = "add",
+            tusker_type = "Woodland Boar",
+            tusklet_type = "Piglet",
+            deer_type = "Bay Horse",
+            wml.tag.filter_location({ terrain = meadows_terrain .. ",Ww" })
         }),
-        WML.micro_ai("assassin", boss.side, {
-                       WML.filter({ type = "Wolf" }),
-                       WML.filter_second({
-                           side = players_str,
-                           canrecruit = true
-                       }),
+        wml.tag.micro_ai({
+          ai_type = "assassin",
+          side = boss.side,
+          action = "add",
+          wml.tag.filter({ type = "Wolf" }),
+          wml.tag.filter_second({
+              side = players_str,
+              canrecruit = true
+          }),
         })
-    })
+    }
 })
 
 wesnoth.game_events.add({
     name = "prestart",
     id = "setup_summons_menu",
-    content = WML:new({
-        WML:tag("set_menu_item", {
+    content = {
+        wml.tag.set_menu_item({
                   id = "summon_menu",
                   description = "Przywołanie Zbuntowanego",
-                  WML.filter_location({
+                  wml.tag.filter_location({
                       x = str.join(map(get("x"), altars), ","),
                       y = str.join(map(get("y"), altars), ","),
-                      WML:tag("and", {
-                                WML:tag("filter_adjacent_location", {
-                                          WML.filter({ canrecruit = true })
+                      wml.tag["and"]({
+                                wml.tag.filter_adjacent_location({
+                                    wml.tag.filter({ canrecruit = true })
                                 }),
-                                WML:tag("or", {
-                                          WML.filter({ canrecruit = true })
+                                wml.tag["or"]({
+                                    wml.tag.filter({ canrecruit = true })
                                 })
                       })
                   }),
         })
-    })
+    }
 })
 
 wesnoth.game_events.add_menu(
@@ -86,23 +97,21 @@ wesnoth.game_events.add_menu(
     local spawn = Biomes[side.variables.biome].spawn.boss
     local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, { type = spawn.unit_type })
     local hex = { x = x, y = y }
-    wesnoth.map.place_area(
-      WML:new({
-          id = "boss-fight",
-          x = altar.x,
-          y = altar.y,
-          radius = 3,
-          WML.time({
-              name = "Aura Zbuntowanego Imiędoustalenia",
-              description = "Wokół Zbuntowanego panuje ciemność i burza z piorunami.",
-              image = "misc/time-schedules/schedule-midnight.png",
-              lawful_bonus = -25,
-              red = -75,
-              green = -45,
-              blue = -13,
-          })
-      })
-    )
+    wesnoth.map.place_area({
+        id = "boss-fight",
+        x = altar.x,
+        y = altar.y,
+        radius = 3,
+        wml.tag.time({
+            name = "Aura Zbuntowanego Imiędoustalenia",
+            description = "Wokół Zbuntowanego panuje ciemność i burza z piorunami.",
+            image = "misc/time-schedules/schedule-midnight.png",
+            lawful_bonus = -25,
+            red = -75,
+            green = -45,
+            blue = -13,
+        })
+    })
     local avatar = spawn:spawn(hex, side.side)
     avatar[1].role = "boss"
 end)
@@ -111,11 +120,11 @@ wesnoth.game_events.add({
     name = "die",
     id = "boss-defeated",
     first_time_only = false,
-    filter = WML:new({ WML.filter({ role = "boss" }) }),
-    content = WML:new({
-        WML:tag("remove_time_area", { id = "boss-fight" }),
-        WML:tag("endlevel", { result = "victory" })
-    })
+    filter = { wml.tag.filter({ role = "boss" }) },
+    content = {
+        wml.tag.remove_time_area({ id = "boss-fight" }),
+        wml.tag.endlevel({ result = "victory" })
+    }
 })
 
 wesnoth.game_events.add({
@@ -198,7 +207,7 @@ function inactive_spawn_filter(area, side)
       end
     end,
     "",
-    iter(wesnoth.sides.find({ WML:tag("not", { side = side }) }))
+    iter(wesnoth.sides.find({ wml.tag["not"]({ side = side }) }))
   )
   return {
       area = area,
