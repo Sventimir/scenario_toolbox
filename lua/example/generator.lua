@@ -133,7 +133,6 @@ function Gen:expand_biomes()
 end
 
 function Gen:initial_spawn(biome, side)
-  local w = {}
   local available_hexes = Hex.Set:new(biome.hexes:iter())
   local spawns = biome.spawn.passive or {}
 
@@ -141,51 +140,22 @@ function Gen:initial_spawn(biome, side)
     available_hexes = available_hexes:diff(Hex.Set:new(h:in_circle(5)))
   end
 
-  while #spawns > 0 and available_hexes.size > 0 do
-    local hex = available_hexes:random()
-    available_hexes:remove(hex)
-    w = wml.merge(w, spawns[mathx.random(#spawns)]:wml(hex, side), "append")
-    available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
-    self.units:add(hex)
+  local function it()
+    while #spawns > 0 and available_hexes.size > 0 do
+      local hex = available_hexes:random()
+      available_hexes:remove(hex)
+      available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
+      self.units:add(hex)
+      return spawns[mathx.random(#spawns)]:wml(hex, side)
+    end
   end
 
-  return w
+  return join(it)
 end
 
 function Gen:make(cfg)
   local s = wml.get_child(cfg, "scenario")
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
-
-  self:height_map()
-  self.center.feature =
-    Biome.Feature.building(
-      "altar",
-      "items/altar.png",
-      function(self, hex) return { weight = 1000, feat = self } end,
-      function(self, hex, scenario) end
-    )
-  self:gen_biome_centers()
-  self:expand_biomes()
-  
-  Biome.Feature.center = self.center
-  self.center.feature:apply(self.center, s)
-  for hex in self.map:iter() do
-    if hex.biome then
-      f = hex.biome.features:assign(hex)
-      if f then f:apply(hex, s) end
-    end
-  end
-
-  self.units = Hex.Set:new()
-
-  local starting_positions = as_table(filter(function(h) return h.biome end, self.center:circle(1)))
-  for i = 1, cfg.player_count do
-    local hex = table.remove(starting_positions, mathx.random(#starting_positions))
-    hex.terrain = string.format("%i %s", i, hex.terrain)
-    self.units:add(hex)
-  end
-
-  s.map_data = self.map:as_map_data()
 
   local schedule = wml.get_child(s, "time")
   table.insert(s, Biomes.meadows:time_area(iter(schedule)))
@@ -245,12 +215,51 @@ function Gen:make(cfg)
       )
     end
     boss = wml.merge(boss, { wml.tag.variables(vars) }, "append")
-    boss = wml.merge(boss, self:initial_spawn(biome, side_counter), "append")
 
     table.insert(s, wml.tag.side(boss))
   end
 
   table.insert(s, wml.tag.variables({ active = "meadows" }))
+
+  self:height_map()
+  self.center.feature =
+    Biome.Feature.building(
+      "altar",
+      "items/altar.png",
+      function(self, hex) return { weight = 1000, feat = self } end,
+      function(self, hex, scenario) end
+    )
+  self:gen_biome_centers()
+  self:expand_biomes()
+  
+  Biome.Feature.center = self.center
+  self.center.feature:apply(self.center, s)
+  for hex in self.map:iter() do
+    if hex.biome then
+      f = hex.biome.features:assign(hex)
+      if f then f:apply(hex, s) end
+    end
+  end
+
+  self.units = Hex.Set:new()
+
+  local starting_positions = as_table(filter(function(h) return h.biome end, self.center:circle(1)))
+  for i = 1, cfg.player_count do
+    local hex = table.remove(starting_positions, mathx.random(#starting_positions))
+    hex.terrain = string.format("%i %s", i, hex.terrain)
+    self.units:add(hex)
+  end
+
+  s.map_data = self.map:as_map_data()
+
+  for side in wml.child_range(s, "side") do
+    local vars = wml.get_child(side, "variables")
+    if vars and vars.biome then
+      for u in self:initial_spawn(Biomes[vars.biome], side.side) do
+        table.insert(side, u)
+      end
+    end
+  end
 
   table.insert(
     s,

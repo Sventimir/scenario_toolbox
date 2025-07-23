@@ -28,7 +28,7 @@ function Spawn:placement(hex, side)
 end
 
 function Spawn:wml(hex, side)
-  return as_table(map(wml.tag.unit, self:placement(hex, side)))
+  return map(wml.tag.unit, self:placement(hex, side))
 end
 
 function Spawn:spawn(hex, side)
