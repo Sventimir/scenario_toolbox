@@ -86,6 +86,9 @@ Meadows:add_feat(
     end,
     function(self, hex, scenario) -- init
       self.count = (self.count or 0) + 1
+      local s = wml.find_child(scenario, "side", { wml.tag.variables({ biome = "meadows" }) })
+      local vars = wml.get_child(s, "variables")
+      table.insert(vars, wml.tag.burial({ x = hex.x, y = hex.y }))
     end
   )
 )
