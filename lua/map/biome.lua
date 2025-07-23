@@ -134,6 +134,22 @@ function Biome.Feature.castle(keep, castle, weigh, expand, extra)
   return setmetatable(c, Biome.Feature)
 end
 
+function Biome.Feature.building(name, image, weigh, init)
+  local b = { name = name, img = image, weigh = weigh, init = init }
+
+  function b:apply(hex, scenario)
+    scenario:insert("item", {
+                      x = hex.x, y = hex.y,
+                      name = self.name,
+                      image = self.img,
+                      visible_in_fog = true,
+    })
+    self:init(hex, scenario)
+  end
+
+  return setmetatable(b, Biome.Feature)
+end
+
 Biome.FeatureSet = {}
 Biome.FeatureSet.__index = Biome.FeatureSet
 

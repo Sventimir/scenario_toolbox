@@ -55,33 +55,6 @@ Meadows.heights = {
 Meadows.colour = "green"
 Meadows:add_feat(Altar)
 Meadows:add_feat(
-  Biome.Feature.neighbourhood_overlay(
-    "forest", 1,
-    function(hex, neighbours)
-      if hex.height < 0 or hex.height > 1 then
-        return 0
-      else
-        return 100 + 2 * neighbours
-      end
-    end,
-    { { terrain = "Fds", weight = 4 }, { terrain = "Fdf", weight = 4 },
-      { terrain = "Fet", weight = 1 } }
-  )
-)
-Meadows:add_feat(
-  Biome.Feature.neighbourhood_overlay(
-    "village", 10,
-    function(hex, neighbours)
-      if hex.height < 0 or hex.height > 1 then
-        return 0
-      else
-        return mathx.max(3 - neighbours, 0)
-      end
-    end,
-    { { terrain = "Vhr", weight = 1 }, { terrain = "Vhhr", weight = 1 } }
-  )
-)
-Meadows:add_feat(
   Biome.Feature.castle(
     "Ker", "Cer",
     function(feat, hex)
@@ -107,6 +80,51 @@ Meadows:add_feat(
       return take(mathx.random(2, 3), hexes)
     end,
     { central_camp = false }
+  )
+)
+Meadows:add_feat(
+  Biome.Feature.building(
+    "burial",
+    "items/burial.png",
+    function(self, hex) --weigh
+      if hex.height < 0 then
+        return { weight = 0, feat = self }
+      else
+        local dist = hex:distance(Biome.Feature.center)
+        local w = mathx.floor(mathx.max(0, 5 - ((dist - 15) ^ 2)))
+        return { weight = w - (self.count or 0), feat = self }
+      end
+    end,
+    function(self, hex, scenario) -- init
+      self.count = (self.count or 0) + 1
+    end
+  )
+)
+Meadows:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "village", 10,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+        return 0
+      else
+        return mathx.max(3 - neighbours, 0)
+      end
+    end,
+    { { terrain = "Vhr", weight = 1 }, { terrain = "Vhhr", weight = 1 } }
+  )
+)
+Meadows:add_feat(
+  Biome.Feature.neighbourhood_overlay(
+    "forest", 1,
+    function(hex, neighbours)
+      if hex.height < 0 or hex.height > 1 then
+        return 0
+      else
+        return 100 + 2 * neighbours
+      end
+    end,
+    { { terrain = "Fds", weight = 4 }, { terrain = "Fdf", weight = 4 },
+      { terrain = "Fet", weight = 1 } }
   )
 )
 Meadows.spawn = {
