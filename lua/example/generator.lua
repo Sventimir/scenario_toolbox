@@ -144,7 +144,7 @@ function Gen:expand_biomes()
 end
 
 function Gen:initial_spawn(biome, side)
-  local wml = WML:new()
+  local w = {}
   local available_hexes = Hex.Set:new(biome.hexes:iter())
   local spawns = biome.spawn.passive or {}
 
@@ -155,13 +155,12 @@ function Gen:initial_spawn(biome, side)
   while #spawns > 0 and available_hexes.size > 0 do
     local hex = available_hexes:random()
     available_hexes:remove(hex)
-    local s = spawns[mathx.random(#spawns)]:wml(hex, side)
-    wml:merge(s)
+    w = wml.merge(w, spawns[mathx.random(#spawns)]:wml(hex, side), "append")
     available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
     self.units:add(hex)
   end
 
-  return wml
+  return w
 end
 
 function Gen:make(cfg)
@@ -203,7 +202,7 @@ function Gen:make(cfg)
   local side_counter = 0
 
   for i = 1, cfg.player_count do
-    local side = Side:new({
+    local side = {
         side = i,
         color = self.side_color[i],
         faction = "st-heroes",
@@ -219,14 +218,14 @@ function Gen:make(cfg)
         save_id = "player" .. i,
         team_name = "Bohaterowie",
         defeat_condition = "never",
-    })
+    }
     s:insert("side", side)
     side_counter = i
   end
 
   for biome in iter(Biomes) do
     side_counter = side_counter + 1
-    boss = Side:new({
+    boss = {
         side = side_counter,
         color = biome.colour,
         faction = "Custom",
@@ -240,18 +239,22 @@ function Gen:make(cfg)
         income = 0,
         team_name = biome.name,
         defeat_condition = "never",
-    })
-    local vars = WML:tag("variables", { biome = biome.name })
+    }
+    local vars = { biome = biome.name }
     if biome.altar then
-      vars:insert("altar", {
-                x = biome.altar.x,
-                y = biome.altar.y
-      })
+      vars = wml.merge(
+        vars,
+        { wml.tag.altar({
+              x = biome.altar.x,
+              y = biome.altar.y
+        })},
+        "append"
+      )
     end
-    boss:insert(vars)
-    boss:merge(self:initial_spawn(biome, side_counter))
+    boss = wml.merge(boss, { wml.tag.variables(vars) }, "append")
+    boss = wml.merge(boss, self:initial_spawn(biome, side_counter), "append")
 
-    s:insert("side", boss)
+    s:insert("side", WML:new(boss))
   end
 
   s:insert(self.center.feature:wml())
@@ -261,9 +264,9 @@ function Gen:make(cfg)
              name = "preload",
              id = "preload",
              first_time_only = false,
-             {"lua", WML:new({
-                  code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
-             })}
+             wml.tag.lua({
+                 code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
+             })
   })
 
   return s
