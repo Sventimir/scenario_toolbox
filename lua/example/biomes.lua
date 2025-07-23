@@ -86,10 +86,10 @@ Meadows:add_feat(
     "Ker", "Cer",
     function(feat, hex)
       local center_dist = hex:distance(Biome.Feature.center)
-      if hex.height < 0 or center_dist < 7 then
-        return { weight = 0, feat = feat }
-      elseif center_dist == 3 then
+      if center_dist == 3 then
         return { weight = feat.central_camp and 0 or 100, feat = feat }
+      elseif hex.height < 0 or center_dist < 7 then
+        return { weight = 0, feat = feat }
       else
         return { weight = 1, feat = feat }
       end
