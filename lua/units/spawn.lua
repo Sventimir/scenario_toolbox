@@ -1,5 +1,4 @@
 require("scenario_toolbox/lua/lib/core")
-local WML = require("scenario_toolbox/lua/wml/wml")
 
 local Spawn = {}
 Spawn.__index = Spawn
@@ -29,16 +28,7 @@ function Spawn:placement(hex, side)
 end
 
 function Spawn:wml(hex, side)
-  return WML:new(
-    as_table(
-      map(
-        function(t)
-          return WML:tag("unit", t)
-        end,
-        self:placement(hex, side)
-      )
-    )
-  )
+  return as_table(map(wml.tag.unit, self:placement(hex, side)))
 end
 
 function Spawn:spawn(hex, side)

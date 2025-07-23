@@ -36,13 +36,13 @@ function Biome:remove_hex(hex)
 end
 
 function Biome:time_area(timedef)
-  local area = WML:new({ id = self.name, x = "", y = "" })
+  local area = { id = self.name, x = "", y = "" }
   for hex in self.hexes:iter() do
     area.x = string.format("%s%i,", area.x, hex.x)
     area.y = string.format("%s%i,", area.y, hex.y)
   end
   for time in timedef do
-    area:insert("time", time)
+    area = wml.merge(area, { wml.tag.time(time) }, "append")
   end
   return "time_area", area
 end
