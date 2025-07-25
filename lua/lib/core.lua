@@ -54,13 +54,11 @@ end
 
 
 function drop(n, iter, state, ctrl)
-  local s = { inter = state, ctrl = ctrl }
+  local s = { intern = state, ctrl = ctrl }
   for _ = 1, n do
     s.ctrl = iter(s.intern, s.ctrl)
   end
-  return function()
-    return iter(s.intern, s.ctrl)
-  end
+  return iter, s.intern, s.ctrl
 end
 
 

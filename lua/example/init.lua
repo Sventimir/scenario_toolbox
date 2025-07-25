@@ -188,7 +188,7 @@ wesnoth.game_events.add({
       local side = wesnoth.sides[wml.variables.side_number]
       local biome = Biomes[side.variables.biome]
       local time = wesnoth.schedule.get_time_of_day(biome.name)
-      if wml.variables.active == biome.name and side.variables.altar then -- active spawn
+      if wml.variables.active == biome.name then -- active spawn
         local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
         local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
         spawn:spawn(altar, side.side)

@@ -155,6 +155,48 @@ end
 
 function Gen:make(cfg)
   local s = wml.get_child(cfg, "scenario")
+  for i = 1, cfg.player_count do
+    local side = {
+        side = i,
+        color = self.side_color[i],
+        faction = "st-heroes",
+        faction_lock = false,
+        leader_lock = false,
+        fog = true,
+        shroud = true,
+        gold = 50,
+        hidden = false,
+        income = 0,
+        village_gold = 0,
+        persistent = true,
+        save_id = "player" .. i,
+        team_name = "Bohaterowie",
+        defeat_condition = "never",
+    }
+    table.insert(s, wml.tag.side(side))
+  end
+
+  for i, biome in zip(drop(cfg.player_count, arith.nats()), iter(Biomes)) do
+    boss = {
+        side = i,
+        color = biome.colour,
+        faction = "Custom",
+        controller = "ai",
+        allow_player = false,
+        faction_lock = true,
+        fog = false,
+        shroud = false,
+        gold = 0,
+        hidden = true,
+        income = 0,
+        team_name = biome.name,
+        defeat_condition = "never",
+    }
+    local vars = { biome = biome.name }
+    table.insert(boss, wml.tag.variables(vars))
+    table.insert(s, wml.tag.side(boss))
+  end
+ 
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
   self:height_map()
@@ -189,58 +231,20 @@ function Gen:make(cfg)
 
   s.map_data = self.map:as_map_data()
 
-  local schedule = wml.child_array(s, "time")
-  for biome in iter(Biomes) do
-    table.insert(s, wml.tag.time_area(biome:time_area(iter(schedule))))
-  end
-  local side_counter = 0
-
-  for i = 1, cfg.player_count do
-    local side = {
-        side = i,
-        color = self.side_color[i],
-        faction = "st-heroes",
-        faction_lock = false,
-        leader_lock = false,
-        fog = true,
-        shroud = true,
-        gold = 50,
-        hidden = false,
-        income = 0,
-        village_gold = 0,
-        persistent = true,
-        save_id = "player" .. i,
-        team_name = "Bohaterowie",
-        defeat_condition = "never",
-    }
-    table.insert(s, wml.tag.side(side))
-    side_counter = i
-  end
-
-  for biome in iter(Biomes) do
-    side_counter = side_counter + 1
-    boss = {
-        side = side_counter,
-        color = biome.colour,
-        faction = "Custom",
-        controller = "ai",
-        allow_player = false,
-        faction_lock = true,
-        fog = false,
-        shroud = false,
-        gold = 0,
-        hidden = true,
-        income = 0,
-        team_name = biome.name,
-        defeat_condition = "never",
-    }
-    local vars = { biome = biome.name }
+  for side in drop(cfg.player_count, wml.child_range(s, "side")) do
+    local vars = wml.get_child(side, "variables")
+    local biome = Biomes[vars.biome]
     if biome.altar then
       table.insert(vars, wml.tag.altar(biome.altar:coords()))
     end
-    table.insert(boss, wml.tag.variables(vars))
-    boss = wml.merge(boss, as_table(self:initial_spawn(biome, boss)))
-    table.insert(s, wml.tag.side(boss))
+    for u in self:initial_spawn(biome, boss) do
+      table.insert(side, u)
+    end
+  end
+
+  local schedule = wml.child_array(s, "time")
+  for biome in iter(Biomes) do
+    table.insert(s, wml.tag.time_area(biome:time_area(iter(schedule))))
   end
 
   table.insert(s, wml.tag.variables({ active = "meadows" }))
