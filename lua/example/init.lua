@@ -1,14 +1,22 @@
 wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 local Hex = require("scenario_toolbox/lua/map/hex")
-local Biomes = require("scenario_toolbox/lua/example/biomes")
+Biomes = require("scenario_toolbox/lua/example/biomes")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
 local enemies = wesnoth.sides.find({ wml.tag["not"]({ team_name = "Bohaterowie" }) })
-local altars = filter_map(function(s) return s.variables.altar end, iter(enemies))
 local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
+
+for enemy in iter(enemies) do
+  if enemy.variables.altar then
+    local loc = enemy.variables.altar
+    Biomes[enemy.variables.biome].altar = Hex:from_wesnoth(
+      wesnoth.map.get(loc.x, loc.y)
+    )
+  end
+end
 
 wesnoth.game_events.add({
     name = "start",
@@ -61,6 +69,7 @@ wesnoth.game_events.add({
     }
 })
 
+local altars = filter_map(get("altar"), iter(Biomes))
 wesnoth.game_events.add({
     name = "prestart",
     id = "setup_summons_menu",
