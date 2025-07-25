@@ -25,6 +25,23 @@ local Altar = Biome.Feature.building(
   end
 )
 
+function Altar:assign(hex)
+  hex.feature = self
+  hex.biome.features:remove(self.name)
+end
+
+function Altar:apply(hex, scenario)
+  local wml = {
+      x = hex.x,
+      y = hex.y,
+      name = "altar-" .. hex.biome.name,
+      image = "items/altar-evil.png",
+      visible_in_fog = true,
+  }
+  scenario:insert("item", wml)
+  hex.biome.altar = hex
+end
+
 Ocean = Biome:new("ocean", 1)
 Ocean.heights = {
   [-2] = "Wo",
@@ -71,27 +88,27 @@ Meadows:add_feat(
     { central_camp = false }
   )
 )
-Meadows:add_feat(
-  Biome.Feature.building(
-    "burial",
-    "items/burial.png",
-    function(self, hex) --weigh
-      if hex.height < 0 then
-        return { weight = 0, feat = self }
-      else
-        local dist = hex:distance(Biome.Feature.center)
-        local w = mathx.floor(mathx.max(0, 5 - ((dist - 15) ^ 2)))
-        return { weight = w - (self.count or 0), feat = self }
-      end
-    end,
-    function(self, hex, scenario) -- init
-      self.count = (self.count or 0) + 1
-      local s = wml.find_child(scenario, "side", { wml.tag.variables({ biome = "meadows" }) })
-      local vars = wml.get_child(s, "variables")
-      table.insert(vars, wml.tag.burial({ x = hex.x, y = hex.y }))
-    end
-  )
-)
+-- Meadows:add_feat(
+--   Biome.Feature.building(
+--     "burial",
+--     "items/burial.png",
+--     function(self, hex) --weigh
+--       if hex.height < 0 then
+--         return { weight = 0, feat = self }
+--       else
+--         local dist = hex:distance(Biome.Feature.center)
+--         local w = mathx.floor(mathx.max(0, 5 - ((dist - 15) ^ 2)))
+--         return { weight = w - (self.count or 0), feat = self }
+--       end
+--     end,
+--     function(self, hex, scenario) -- init
+--       self.count = (self.count or 0) + 1
+--       local s = wml.find_child(scenario, "side", { wml.tag.variables({ biome = "meadows" }) })
+--       local vars = wml.get_child(s, "variables")
+--       table.insert(vars, wml.tag.burial({ x = hex.x, y = hex.y }))
+--     end
+--   )
+-- )
 Meadows:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "village", 10,

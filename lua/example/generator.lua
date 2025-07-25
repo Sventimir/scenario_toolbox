@@ -3,9 +3,20 @@ CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
 Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
 Biome = require("scenario_toolbox/lua/map/biome")
+Side = require("scenario_toolbox/lua/wml/side")
+Scenario = require("scenario_toolbox/lua/wml/scenario")
+Item = require("scenario_toolbox/lua/wml/item")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Biomes = require("scenario_toolbox/lua/example/biomes")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
+
+
+function Item:forsaken_altar(hex)
+  return self:new("altar-" .. hex.biome.name, hex, {
+                    image = "items/altar-evil.png",
+                    visible_in_fog = true
+  })
+end
 
 
 local function hex_height(hex)
@@ -146,7 +157,7 @@ function Gen:initial_spawn(biome, side)
       available_hexes:remove(hex)
       available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
       self.units:add(hex)
-      return spawns[mathx.random(#spawns)]:wml(hex, side)
+      return spawns[mathx.random(#spawns)]:wml(hex, side.side)
     end
   end
 
@@ -154,9 +165,41 @@ function Gen:initial_spawn(biome, side)
 end
 
 function Gen:make(cfg)
-  local s = wml.get_child(cfg, "scenario")
+  local s = Scenario:new(cfg:find("scenario", 1))
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
+  self:height_map()
+  self.center.feature = Item:new("altar", self.center, {
+                                   image = "items/altar.png",
+                                   visible_in_fog = true
+  })
+  self:gen_biome_centers()
+  self:expand_biomes()
+  
+  Biome.Feature.center = self.center
+  for hex in self.map:iter() do
+    if hex.biome then
+      f = hex.biome.features:assign(hex)
+      if f then f:apply(hex, s) end
+    end
+  end
+
+  self.units = Hex.Set:new()
+
+  local starting_positions = as_table(filter(function(h) return h.biome end, self.center:circle(1)))
+  for i = 1, cfg.player_count do
+    local hex = table.remove(starting_positions, mathx.random(#starting_positions))
+    hex.terrain = string.format("%i %s", i, hex.terrain)
+    self.units:add(hex)
+  end
+
+  s.map_data = self.map:as_map_data()
+
+  local schedule = s:find("time")
+  s:insert(Biomes.meadows:time_area(iter(schedule)))
+  for biome in iter(self.biomes) do
+    s:insert(biome:time_area(iter(schedule)))
+  end
   local side_counter = 0
 
   for i = 1, cfg.player_count do
@@ -177,7 +220,7 @@ function Gen:make(cfg)
         team_name = "Bohaterowie",
         defeat_condition = "never",
     }
-    table.insert(s, wml.tag.side(side))
+    s:insert("side", side)
     side_counter = i
   end
 
@@ -210,70 +253,23 @@ function Gen:make(cfg)
       )
     end
     boss = wml.merge(boss, { wml.tag.variables(vars) }, "append")
+    boss = wml.merge(boss, as_table(self:initial_spawn(biome, boss)))
 
-    table.insert(s, wml.tag.side(boss))
+    s:insert("side", WML:new(boss))
   end
 
-  table.insert(s, wml.tag.variables({ active = "meadows" }))
+  s:insert(self.center.feature:wml())
+  s:insert("variables", { active = "meadows" })
 
-  self:height_map()
-  self.center.feature =
-    Biome.Feature.building(
-      "altar",
-      "items/altar.png",
-      function(self, hex) return { weight = 1000, feat = self } end,
-      function(self, hex, scenario) end
-    )
-  self:gen_biome_centers()
-  self:expand_biomes()
-  
-  Biome.Feature.center = self.center
-  self.center.feature:apply(self.center, s)
-  for hex in self.map:iter() do
-    if hex.biome then
-      f = hex.biome.features:assign(hex)
-      if f then f:apply(hex, s) end
-    end
-  end
+  s:insert("event", {
+             name = "preload",
+             id = "preload",
+             first_time_only = false,
+             wml.tag.lua({
+                 code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
+             })
+  })
 
-  local schedule = wml.get_child(s, "time")
-  table.insert(s, Biomes.meadows:time_area(iter(schedule)))
-  for biome in iter(self.biomes) do
-    table.insert(s, biome:time_area(iter(schedule)))
-  end
-
-  self.units = Hex.Set:new()
-
-  local starting_positions = as_table(filter(function(h) return h.biome end, self.center:circle(1)))
-  for i = 1, cfg.player_count do
-    local hex = table.remove(starting_positions, mathx.random(#starting_positions))
-    hex.terrain = string.format("%i %s", i, hex.terrain)
-    self.units:add(hex)
-  end
-
-  s.map_data = self.map:as_map_data()
-
-  for side in wml.child_range(s, "side") do
-    local vars = wml.get_child(side, "variables")
-    if vars and vars.biome then
-      for u in self:initial_spawn(Biomes[vars.biome], side.side) do
-        table.insert(side, u)
-      end
-    end
-  end
-
-  table.insert(
-    s,
-    wml.tag.event({
-        name = "preload",
-        id = "preload",
-        first_time_only = false,
-        wml.tag.lua({
-            code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
-        })
-    })
-  )
-  
   return s
 end
 
