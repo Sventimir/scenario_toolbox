@@ -35,13 +35,13 @@ function Biome:remove_hex(hex)
   self.hexes:remove(hex)
 end
 
-function Biome:time_area(timedef)
+function Biome:time_area(it, state)
   local area = { id = self.name, x = "", y = "" }
   for hex in self.hexes:iter() do
     area.x = string.format("%s%i,", area.x, hex.x)
     area.y = string.format("%s%i,", area.y, hex.y)
   end
-  for time in timedef do
+  for time in it, state do
     table.insert(area, wml.tag.time(time))
   end
   return area

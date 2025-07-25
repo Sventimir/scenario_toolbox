@@ -3,20 +3,9 @@ CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
 Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
 Biome = require("scenario_toolbox/lua/map/biome")
-Side = require("scenario_toolbox/lua/wml/side")
-Scenario = require("scenario_toolbox/lua/wml/scenario")
-Item = require("scenario_toolbox/lua/wml/item")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Biomes = require("scenario_toolbox/lua/example/biomes")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
-
-
-function Item:forsaken_altar(hex)
-  return self:new("altar-" .. hex.biome.name, hex, {
-                    image = "items/altar-evil.png",
-                    visible_in_fog = true
-  })
-end
 
 
 local function hex_height(hex)
@@ -165,7 +154,7 @@ function Gen:initial_spawn(biome, side)
 end
 
 function Gen:make(cfg)
-  local s = cfg:find("scenario", 1)
+  local s = wml.get_child(cfg, "scenario")
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
   self:height_map()
@@ -187,9 +176,6 @@ function Gen:make(cfg)
     end
   end
 
-  scenario = s
-  gui.show_lua_console()
-
   self.units = Hex.Set:new()
 
   local starting_positions = as_table(
@@ -203,7 +189,7 @@ function Gen:make(cfg)
 
   s.map_data = self.map:as_map_data()
 
-  local schedule = s:find("time")
+  local schedule = wml.child_array(s, "time")
   for biome in iter(Biomes) do
     table.insert(s, wml.tag.time_area(biome:time_area(iter(schedule))))
   end
