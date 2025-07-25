@@ -138,12 +138,13 @@ function Biome.Feature.building(name, image, weigh, init)
   local b = { name = name, img = image, weigh = weigh, init = init }
 
   function b:apply(hex, scenario)
-    scenario:insert("item", {
-                      x = hex.x, y = hex.y,
-                      name = self.name,
-                      image = self.img,
-                      visible_in_fog = true,
-    })
+    local item = {
+      x = hex.x, y = hex.y,
+      name = self.name,
+      image = self.img,
+      visible_in_fog = true,
+    }
+    table.insert(scenario, wml.tag.item(item))
     self:init(hex, scenario)
   end
 

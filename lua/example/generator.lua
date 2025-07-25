@@ -165,18 +165,21 @@ function Gen:initial_spawn(biome, side)
 end
 
 function Gen:make(cfg)
-  local s = Scenario:new(cfg:find("scenario", 1))
+  local s = cfg:find("scenario", 1)
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
   self:height_map()
-  self.center.feature = Item:new("altar", self.center, {
-                                   image = "items/altar.png",
-                                   visible_in_fog = true
-  })
   self:gen_biome_centers()
   self:expand_biomes()
 
   Biome.Feature.center = self.center
+  self.center.feature = Biome.Feature.building(
+    "origin",
+    "items/altar.png",
+    function(self, hex) return {} end,
+    function(self, hex) end
+  )
+  self.center.feature:apply(self.center, s)
   for hex in self.map:iter() do
     if hex.biome then
       f = hex.biome.features:assign(hex)
@@ -184,9 +187,14 @@ function Gen:make(cfg)
     end
   end
 
+  scenario = s
+  gui.show_lua_console()
+
   self.units = Hex.Set:new()
 
-  local starting_positions = as_table(filter(function(h) return h.biome end, self.center:circle(1)))
+  local starting_positions = as_table(
+    filter(function(h) return h.biome end, self.center:circle(1))
+  )
   for i = 1, cfg.player_count do
     local hex = table.remove(starting_positions, mathx.random(#starting_positions))
     hex.terrain = string.format("%i %s", i, hex.terrain)
@@ -249,7 +257,6 @@ function Gen:make(cfg)
     table.insert(s, wml.tag.side(boss))
   end
 
-  table.insert(s, wml.tag.item(self.center.feature:wml()))
   table.insert(s, wml.tag.variables({ active = "meadows" }))
 
   local preload = {
