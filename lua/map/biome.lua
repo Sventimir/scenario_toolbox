@@ -42,9 +42,9 @@ function Biome:time_area(timedef)
     area.y = string.format("%s%i,", area.y, hex.y)
   end
   for time in timedef do
-    area = wml.merge(area, { wml.tag.time(time) }, "append")
+    table.insert(area, wml.tag.time(time))
   end
-  return "time_area", area
+  return area
 end
 
 function Biome:add_feat(feat)

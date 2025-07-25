@@ -16,7 +16,7 @@ function Item:new(name, hex, props)
 end
 
 function Item:wml()
-  return "item", WML:new({
+  return {
       x = self.hex.x,
       y = self.hex.y,
       name = self.name,
@@ -24,7 +24,7 @@ function Item:wml()
       halo = self.halo,
       visible_in_fog = self.visible_in_fog,
       team_name = self.team_name,
-  })
+  }
 end
 
 return Item

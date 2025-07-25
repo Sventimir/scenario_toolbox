@@ -196,9 +196,8 @@ function Gen:make(cfg)
   s.map_data = self.map:as_map_data()
 
   local schedule = s:find("time")
-  s:insert(Biomes.meadows:time_area(iter(schedule)))
-  for biome in iter(self.biomes) do
-    s:insert(biome:time_area(iter(schedule)))
+  for biome in iter(Biomes) do
+    table.insert(s, wml.tag.time_area(biome:time_area(iter(schedule))))
   end
   local side_counter = 0
 
@@ -250,7 +249,7 @@ function Gen:make(cfg)
     table.insert(s, wml.tag.side(boss))
   end
 
-  s:insert(self.center.feature:wml())
+  table.insert(s, wml.tag.item(self.center.feature:wml()))
   table.insert(s, wml.tag.variables({ active = "meadows" }))
 
   local preload = {
