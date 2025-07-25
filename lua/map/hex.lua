@@ -31,6 +31,10 @@ function Hex:from_wesnoth(hex)
   return hex
 end
 
+function Hex:coords()
+  return { x = self.x, y = self.y }
+end
+
 function Hex:translate(v)
   return self.map:get(v:translate(self.x, self.y))
 end

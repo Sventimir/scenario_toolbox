@@ -175,7 +175,7 @@ function Gen:make(cfg)
   })
   self:gen_biome_centers()
   self:expand_biomes()
-  
+
   Biome.Feature.center = self.center
   for hex in self.map:iter() do
     if hex.biome then
@@ -220,7 +220,7 @@ function Gen:make(cfg)
         team_name = "Bohaterowie",
         defeat_condition = "never",
     }
-    s:insert("side", side)
+    table.insert(s, wml.tag.side(side))
     side_counter = i
   end
 
@@ -243,32 +243,25 @@ function Gen:make(cfg)
     }
     local vars = { biome = biome.name }
     if biome.altar then
-      vars = wml.merge(
-        vars,
-        { wml.tag.altar({
-              x = biome.altar.x,
-              y = biome.altar.y
-        })},
-        "append"
-      )
+      table.insert(vars, wml.tag.altar(biome.altar:coords()))
     end
-    boss = wml.merge(boss, { wml.tag.variables(vars) }, "append")
+    table.insert(boss, wml.tag.variables(vars))
     boss = wml.merge(boss, as_table(self:initial_spawn(biome, boss)))
-
-    s:insert("side", WML:new(boss))
+    table.insert(s, wml.tag.side(boss))
   end
 
   s:insert(self.center.feature:wml())
-  s:insert("variables", { active = "meadows" })
+  table.insert(s, wml.tag.variables({ active = "meadows" }))
 
-  s:insert("event", {
-             name = "preload",
-             id = "preload",
-             first_time_only = false,
-             wml.tag.lua({
-                 code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
-             })
-  })
+  local preload = {
+    name = "preload",
+    id = "preload",
+    first_time_only = false,
+    wml.tag.lua({
+        code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
+    })
+  }
+  table.insert(s, wml.tag.event(preload))
 
   return s
 end
