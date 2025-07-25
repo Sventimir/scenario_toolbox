@@ -157,11 +157,6 @@ function Gen:make(cfg)
   local s = wml.get_child(cfg, "scenario")
   self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
 
-  local schedule = wml.get_child(s, "time")
-  table.insert(s, Biomes.meadows:time_area(iter(schedule)))
-  for biome in iter(self.biomes) do
-    table.insert(s, biome:time_area(iter(schedule)))
-  end
   local side_counter = 0
 
   for i = 1, cfg.player_count do
@@ -239,6 +234,12 @@ function Gen:make(cfg)
       f = hex.biome.features:assign(hex)
       if f then f:apply(hex, s) end
     end
+  end
+
+  local schedule = wml.get_child(s, "time")
+  table.insert(s, Biomes.meadows:time_area(iter(schedule)))
+  for biome in iter(self.biomes) do
+    table.insert(s, biome:time_area(iter(schedule)))
   end
 
   self.units = Hex.Set:new()
