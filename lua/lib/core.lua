@@ -201,9 +201,17 @@ function count(it, state, ctrl)
   return total
 end
 
-function get(key)
-  return function(tbl)
-    return tbl[key]
+function get(...)
+  local keys = {...}
+  return function(t)
+    local k = table.remove(keys, 1)
+    local ret = t
+    local ok = true
+    while ok and ret and k do
+      ok, ret = pcall(function() return ret[k] end)
+      k = table.remove(keys, 1)
+    end
+    return ok and ret or nil
   end
 end
 
@@ -220,10 +228,6 @@ function keys(t)
     table.insert(keys, k)
   end
   return keys
-end
-
-function get(key)
-  return function(tbl) return tbl[key] end
 end
 
 arith = require("scenario_toolbox/lua/lib/arith")
