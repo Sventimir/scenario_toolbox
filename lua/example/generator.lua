@@ -192,7 +192,7 @@ function Gen:make(cfg)
         team_name = biome.name,
         defeat_condition = "never",
     }
-    local vars = { biome = biome.name }
+    local vars = { biome = biome.name, wml.tag.buildings({}) }
     table.insert(boss, wml.tag.variables(vars))
     table.insert(s, wml.tag.side(boss))
   end
@@ -207,6 +207,7 @@ function Gen:make(cfg)
   self.center.feature = Biome.Feature.building(
     "origin",
     "items/altar.png",
+    Meadows,
     function(self, hex) return {} end,
     function(self, hex) end
   )
@@ -234,9 +235,6 @@ function Gen:make(cfg)
   for side in drop(cfg.player_count, wml.child_range(s, "side")) do
     local vars = wml.get_child(side, "variables")
     local biome = Biomes[vars.biome]
-    if biome.altar then
-      table.insert(vars, wml.tag.altar(biome.altar:coords()))
-    end
     for u in self:initial_spawn(biome, boss) do
       table.insert(side, u)
     end

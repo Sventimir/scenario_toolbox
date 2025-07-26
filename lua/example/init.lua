@@ -10,11 +10,14 @@ local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
 for enemy in iter(enemies) do
-  if enemy.variables.altar then
-    local loc = enemy.variables.altar
-    Biomes[enemy.variables.biome].altar = Hex:from_wesnoth(
-      wesnoth.map.get(loc.x, loc.y)
-    )
+  local biome = Biomes[enemy.variables.biome]
+  biome.buildings = {}
+  for building in iter(enemy.variables.building) do
+    if biome.builings[building[1]] then
+      table.insert(biome.buildings[building[1]], building[2])
+    else
+      biome.buildings[building[1]] = { building[2] }
+    end
   end
 end
 
@@ -69,7 +72,7 @@ wesnoth.game_events.add({
     }
 })
 
-local altars = filter_map(get("altar"), iter(Biomes))
+local altars = filter_map(get("buildings", "altar", 1), iter(Biomes))
 wesnoth.game_events.add({
     name = "prestart",
     id = "setup_summons_menu",
@@ -96,13 +99,15 @@ wesnoth.game_events.add({
 wesnoth.game_events.add_menu(
   "summon_menu",
   function()
-    local altar = Hex:from_wesnoth(wesnoth.map.get(wml.variables.x1, wml.variables.y1))
+    local hex = Hex:from_wesnoth(wesnoth.map.get(wml.variables.x1, wml.variables.y1))
     local side = filter(
       function(s)
-        return s.variables.altar.x == altar.x and s.variables.altar.y == altar.y
+        local altar = wml.get_child(s.variables.buildings, "altar")
+        return hex:equals(altar)
       end,
       iter(enemies)
     )()
+    local altar = wml.get_child(side.variables.buildings, "altar")
     local spawn = Biomes[side.variables.biome].spawn.boss
     local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, { type = spawn.unit_type })
     local hex = { x = x, y = y }
@@ -190,7 +195,8 @@ wesnoth.game_events.add({
       local time = wesnoth.schedule.get_time_of_day(biome.name)
       if wml.variables.active == biome.name then -- active spawn
         local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
-        local altar = Hex:from_wesnoth(wesnoth.map.get(side.variables.altar.x, side.variables.altar.y))
+        local coords, _ = wml.get_child(side.variables.buildings, "altar")
+        local altar = Hex:from_wesnoth(wesnoth.map.get(coords.x, coords.y))
         spawn:spawn(altar, side.side)
       end
       if time.lawful_bonus < 0 and #biome.spawn.passive > 0 then -- passive spawn

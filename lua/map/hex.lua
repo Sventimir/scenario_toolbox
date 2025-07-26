@@ -23,6 +23,7 @@ function Hex:from_wesnoth(hex)
     return Hex:from_wesnoth(wesnoth.map.get(v:translate(self.x, self.y)))
   end
 
+  hex.equals = Hex.equals
   hex.circle = Hex.circle
   hex.as_vec = Hex.as_vec
   hex.distance = Hex.distance
@@ -33,6 +34,10 @@ end
 
 function Hex:coords()
   return { x = self.x, y = self.y }
+end
+
+function Hex:equals(other)
+  return other and self.x == other.x and self.y == other.y
 end
 
 function Hex:translate(v)

@@ -203,14 +203,15 @@ end
 
 function get(...)
   local keys = {...}
+  local i = 1
   return function(t)
-    local k = table.remove(keys, 1)
     local ret = t
     local ok = true
-    while ok and ret and k do
-      ok, ret = pcall(function() return ret[k] end)
-      k = table.remove(keys, 1)
+    while ok and ret and keys[i] do
+      ok, ret = pcall(function() return ret[keys[i]] end)
+      i = i + 1
     end
+    i = 1 -- in case the same function was used again
     return ok and ret or nil
   end
 end

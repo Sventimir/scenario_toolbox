@@ -2,44 +2,37 @@ Biome = require("scenario_toolbox/lua/map/biome")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
 
-local Altar = Biome.Feature.building(
-  "altar",
-  "items/altar-evil.png",
-  function(self, hex)
-    local near_other_biome = any(
-      function(h)
-        return h.biome.name ~= hex.biome.name
-      end,
-      hex:in_circle(3)
-    )
-    local dist = hex:distance(Biome.Feature.center)
-    if hex.height < 0 or near_other_biome or dist < 10 then
-      return { weight = 0, feat = self }
-    else
-    return { weight = 100, feat = self }
+local function altar(biome)
+  local altar = Biome.Feature.building(
+    "altar",
+    "items/altar-evil.png",
+    biome,
+    function(self, hex)
+      local near_other_biome = any(
+        function(h)
+          return h.biome.name ~= hex.biome.name
+        end,
+        hex:in_circle(3)
+      )
+      local dist = hex:distance(Biome.Feature.center)
+      if hex.height < 0 or near_other_biome or dist < 10 then
+        return { weight = 0, feat = self }
+      else
+        return { weight = 100, feat = self }
+      end
+    end,
+    function(self, hex, scenario)
+      hex.biome.features:remove(self.name)
+      hex.biome.altar = hex
     end
-  end,
-  function(self, hex, scenario)
+  )
+
+  function altar:assign(hex)
+    hex.feature = self
     hex.biome.features:remove(self.name)
-    hex.biome.altar = hex
   end
-)
-
-function Altar:assign(hex)
-  hex.feature = self
-  hex.biome.features:remove(self.name)
-end
-
-function Altar:apply(hex, scenario)
-  local item = {
-      x = hex.x,
-      y = hex.y,
-      name = "altar-" .. hex.biome.name,
-      image = "items/altar-evil.png",
-      visible_in_fog = true,
-  }
-  table.insert(scenario, wml.tag.item(item))
-  hex.biome.altar = hex
+  
+  return altar
 end
 
 Ocean = Biome:new("ocean", 1)
@@ -59,7 +52,7 @@ Meadows.heights = {
   [2]  = "Mm",
 }
 Meadows.colour = "green"
-Meadows:add_feat(Altar)
+Meadows:add_feat(altar(Meadows))
 Meadows:add_feat(
   Biome.Feature.castle(
     "Ker", "Cer",
@@ -92,6 +85,7 @@ Meadows:add_feat(
   Biome.Feature.building(
     "burial",
     "items/burial.png",
+    Meadows,
     function(self, hex) --weigh
       if hex.height < 0 then
         return { weight = 0, feat = self }
@@ -103,9 +97,6 @@ Meadows:add_feat(
     end,
     function(self, hex, scenario) -- init
       self.count = (self.count or 0) + 1
-      local s = wml.find_child(scenario, "side", { wml.tag.variables({ biome = "meadows" }) })
-      local vars = wml.get_child(s, "variables")
-      table.insert(vars, wml.tag.burial({ x = hex.x, y = hex.y }))
     end
   )
 )

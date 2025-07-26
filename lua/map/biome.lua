@@ -134,8 +134,14 @@ function Biome.Feature.castle(keep, castle, weigh, expand, extra)
   return setmetatable(c, Biome.Feature)
 end
 
-function Biome.Feature.building(name, image, weigh, init)
-  local b = { name = name, img = image, weigh = weigh, init = init }
+function Biome.Feature.building(name, image, biome, weigh, init, spawns)
+  local b = {
+    name = name,
+    img = image,
+    weigh = weigh,
+    init = init,
+    spawns = spawns or {}
+  }
 
   function b:apply(hex, scenario)
     local item = {
@@ -145,7 +151,15 @@ function Biome.Feature.building(name, image, weigh, init)
       visible_in_fog = true,
     }
     table.insert(scenario, wml.tag.item(item))
+    local side = wml.find_child(scenario, "side", { wml.tag.variables({ biome = biome.name })})
+    local vars = wml.get_child(wml.get_child(side, "variables"), "buildings")
+    local building = { x = hex.x, y = hex.y }
+    table.insert(vars, wml.tag[self.name](building))
     self:init(hex, scenario)
+  end
+
+  function b:spawn(hexes)
+    
   end
 
   return setmetatable(b, Biome.Feature)
