@@ -3,6 +3,7 @@ local Spawn = require("scenario_toolbox/lua/units/spawn")
 local Hex = require("scenario_toolbox/lua/map/hex")
 Biomes = require("scenario_toolbox/lua/example/biomes")
 Inventory = require("scenario_toolbox/lua/units/inventory")
+OpeningDialogue = require("scenario_toolbox/lua/example/dialogues/opening")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
@@ -110,6 +111,17 @@ wesnoth.game_events.add({
     name = "start",
     id = "setup_micro_ai",
     content = wml.merge(micro_ai, objectives)
+})
+
+wesnoth.game_events.add({
+    name = "start",
+    action = function()
+      local meadows = wesnoth.sides.find({ formula = "wml_vars.biome = 'meadows'" })[1]
+      local origin = wml.get_child(meadows.variables.sites, "origin")
+      local heroes = wesnoth.units.find({ side = "1,2", canrecruit = true })
+      local dialogue = OpeningDialogue(origin, heroes[1], heroes[2])
+      dialogue:play()
+    end
 })
 
 local altars = filter_map(get("sites", "altar", 1), iter(Biomes))
