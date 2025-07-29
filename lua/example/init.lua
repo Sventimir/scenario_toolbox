@@ -9,14 +9,68 @@ local enemies = wesnoth.sides.find({ wml.tag["not"]({ team_name = "Bohaterowie" 
 local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
+micro_ai = {
+  wml.tag.micro_ai({
+      ai_type = "swarm",
+      side = boss.side,
+      action = "add",
+      wml.tag.filter({ type = "Raven" }),
+      wml.tag.avoid({
+          wml.tag.filter_location({
+              wml.tag["not"]({ area = "meadows" })
+          })
+      }),
+      enemy_distance = 3,
+  }),
+  wml.tag.micro_ai({
+      ai_type = "big_animals",
+      side = boss.side,
+      action = "add",
+      wml.tag.filter({
+          type="Giant Rat",
+          wml.tag.filter_location({
+              wml.tag["not"]({ area = "boss-fight" })
+          })
+      }),
+      wml.tag.filter_location({ terrain = meadows_terrain }),
+      wml.tag.filter_location_wander({ area = "meadows" })
+  }),
+  wml.tag.micro_ai({
+      ai_type ="forest_animals",
+      side = boss.side,
+      action = "add",
+      tusker_type = "Woodland Boar",
+      tusklet_type = "Piglet",
+      deer_type = "Bay Horse",
+      wml.tag.filter_location({ terrain = meadows_terrain .. ",Ww" })
+  }),
+  wml.tag.micro_ai({
+      ai_type = "assassin",
+      side = boss.side,
+      action = "add",
+      wml.tag.filter({ type = "Wolf" }),
+      wml.tag.filter_second({
+          side = players_str,
+          canrecruit = true
+      }),
+  })
+}
+
 for enemy in iter(enemies) do
   local biome = Biomes[enemy.variables.biome]
   biome.buildings = {}
-  for building in iter(enemy.variables.building) do
-    if biome.builings[building[1]] then
+  for building in iter(enemy.variables.buildings) do
+    if biome.buildings[building[1]] then
       table.insert(biome.buildings[building[1]], building[2])
     else
       biome.buildings[building[1]] = { building[2] }
+    end
+  end
+  for site, hexes in pairs(biome.buildings) do
+    local feat = biome.features:find(site)
+    if feat and feat.micro_ai then
+      local mai = feat:micro_ai(hexes)
+      if mai then table.insert(micro_ai, wml.tag.micro_ai(mai)) end
     end
   end
 end
@@ -24,52 +78,7 @@ end
 wesnoth.game_events.add({
     name = "start",
     id = "setup_micro_ai",
-    content = {
-        wml.tag.micro_ai({
-            ai_type = "swarm",
-            side = boss.side,
-            action = "add",
-            wml.tag.filter({ type = "Raven" }),
-            wml.tag.avoid({
-                wml.tag.filter_location({
-                    wml.tag["not"]({ area = "meadows" })
-                })
-            }),
-            enemy_distance = 3,
-        }),
-        wml.tag.micro_ai({
-          ai_type = "big_animals",
-          side = boss.side,
-          action = "add",
-          wml.tag.filter({
-              type="Giant Rat",
-              wml.tag.filter_location({
-                  wml.tag["not"]({ area = "boss-fight" })
-              })
-          }),
-          wml.tag.filter_location({ terrain = meadows_terrain }),
-          wml.tag.filter_location_wander({ area = "meadows" })
-        }),
-        wml.tag.micro_ai({
-            ai_type ="forest_animals",
-            side = boss.side,
-            action = "add",
-            tusker_type = "Woodland Boar",
-            tusklet_type = "Piglet",
-            deer_type = "Bay Horse",
-            wml.tag.filter_location({ terrain = meadows_terrain .. ",Ww" })
-        }),
-        wml.tag.micro_ai({
-          ai_type = "assassin",
-          side = boss.side,
-          action = "add",
-          wml.tag.filter({ type = "Wolf" }),
-          wml.tag.filter_second({
-              side = players_str,
-              canrecruit = true
-          }),
-        })
-    }
+    content = micro_ai
 })
 
 local altars = filter_map(get("buildings", "altar", 1), iter(Biomes))
@@ -186,18 +195,16 @@ wesnoth.game_events.add({
       return wesnoth.sides[wml.variables.side_number].team_name ~= "Bohaterowie"
     end,
     action = function()
-      -- There are 2 types of spawn: active spawn every turn at the altar
+      -- There are 2 types of spawn: site-specific spawn at certain sites on the map
       -- and passive spawn during the night in all biomes.
       -- Note that these spawns are not mutually exclusive - they can and will
-      -- happen both for the active side during the night.
+      -- happen both at night for sides that have special sites in them.
       local side = wesnoth.sides[wml.variables.side_number]
       local biome = Biomes[side.variables.biome]
       local time = wesnoth.schedule.get_time_of_day(biome.name)
-      if wml.variables.active == biome.name then -- active spawn
-        local spawn = biome.spawn.active[mathx.random(#biome.spawn.active)]
-        local coords, _ = wml.get_child(side.variables.buildings, "altar")
-        local altar = Hex:from_wesnoth(wesnoth.map.get(coords.x, coords.y))
-        spawn:spawn(altar, side.side)
+      for name, sites in pairs(biome.buildings) do -- site-specific spawn
+        local f = biome.features:find(name)
+        f:spawn(sites)
       end
       if time.lawful_bonus < 0 and #biome.spawn.passive > 0 then -- passive spawn
         local filt = inactive_spawn_filter(biome.name, side.side)

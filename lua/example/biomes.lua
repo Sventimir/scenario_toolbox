@@ -1,3 +1,4 @@
+Hex = require("scenario_toolbox/lua/map/hex")
 Biome = require("scenario_toolbox/lua/map/biome")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
@@ -24,15 +25,42 @@ local function altar(biome)
     function(self, hex, scenario)
       hex.biome.features:remove(self.name)
       hex.biome.altar = hex
-    end
+    end,
+    biome.spawn.active
   )
 
   function altar:assign(hex)
     hex.feature = self
     hex.biome.features:remove(self.name)
   end
+
+  function altar:spawn(hexes)
+    if #hexes > 0 and #self.spawns > 0 and wml.variables.active == biome.name then
+      local spawn = self.spawns[mathx.random(#self.spawns)]
+      local coords, _ = hexes[1]
+      local altar = Hex:from_wesnoth(wesnoth.map.get(coords.x, coords.y))
+      spawn:spawn(altar, self.biome:side().side)
+    end
+  end
+
+  function altar:micro_ai() return nil end
   
   return altar
+end
+
+local function origin(biome)
+  local origin = Biome.Feature.building(
+    "origin",
+    "items/altar.png",
+    biome,
+    function(self, hex) return { weight = 0, feat = self } end,
+    function(self, hex) end,
+    {}
+  )
+
+  function origin:micro_ai() return nil end
+
+  return origin
 end
 
 Ocean = Biome:new("ocean", 1)
@@ -52,6 +80,22 @@ Meadows.heights = {
   [2]  = "Mm",
 }
 Meadows.colour = "green"
+Meadows.spawn = {
+  passive = { 
+    Spawn:family("Woodland Boar", "Piglet", 2, 4),
+    Spawn:new("Raven"),
+    Spawn:new("Giant Rat"),
+    Spawn:new("Bay Horse"),
+  },
+  active = {
+    Spawn:wolf_pack("Wolf", 0, 1),
+  },
+  boss = Spawn:new("Great Wolf", {
+                     max_hitpoints = 90,
+                     name = "Imiędoustalenia",
+                     id = "meadows-boss",
+  })
+}
 Meadows:add_feat(altar(Meadows))
 Meadows:add_feat(
   Biome.Feature.castle(
@@ -97,7 +141,11 @@ Meadows:add_feat(
     end,
     function(self, hex, scenario) -- init
       self.count = (self.count or 0) + 1
-    end
+    end,
+    {
+      Spawn:new("Skeleton", { role = "burial" }),
+      Spawn:new("Skeleton Archer", { role = "burial" })
+    }
   )
 )
 Meadows:add_feat(
@@ -127,22 +175,7 @@ Meadows:add_feat(
       { terrain = "Fet", weight = 1 } }
   )
 )
-Meadows.spawn = {
-  passive = { 
-    Spawn:family("Woodland Boar", "Piglet", 2, 4),
-    Spawn:new("Raven"),
-    Spawn:new("Giant Rat"),
-    Spawn:new("Bay Horse"),
-  },
-  active = {
-    Spawn:wolf_pack("Wolf", 0, 1),
-  },
-  boss = Spawn:new("Great Wolf", {
-                     max_hitpoints = 90,
-                     name = "Imiędoustalenia",
-                     id = "meadows-boss",
-  })
-}
+Meadows:add_feat(origin(Meadows))
 
 Forest = Biome:new("forest", 100)
 Forest.heights = {
