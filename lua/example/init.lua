@@ -76,10 +76,35 @@ for enemy in iter(enemies) do
   end
 end
 
+local objectives = {
+  wml.tag.objectives({
+      team_name = "Bohaterowie",
+      summary = "Odnajdź i pokonaj Przedwiecznego Imiędoustalenia.",
+      wml.tag.objective({
+          condition = "win",
+          description = "Odnajdź ołtarz przywołania Przedwiecznego.",
+      }),
+      wml.tag.objective({
+          condition = "win",
+          description = "Zdobądź ofiarę konieczną do przywołania.",
+      }),
+      wml.tag.objective({
+          condition = "win",
+          description = "Pokonaj Przedwiecznego.",
+      }),
+      wml.tag.note({
+          description = "Ołtarz znajduje się gdzieś na łąkach wyspy.",
+      }),
+      wml.tag.note({
+          description = "Wskazówkę co do wymaganej ofiary można znaleźć przy ołtarzu przedwiecznego.",
+      }),
+  })
+}
+
 wesnoth.game_events.add({
     name = "start",
     id = "setup_micro_ai",
-    content = micro_ai
+    content = wml.merge(micro_ai, objectives)
 })
 
 local altars = filter_map(get("sites", "altar", 1), iter(Biomes))
