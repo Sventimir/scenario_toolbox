@@ -36,8 +36,10 @@ function Biome:remove_hex(hex)
 end
 
 function Biome:side()
-  local formula = string.format("wml_vars.biome = '%s'", self.name)
-  return wesnoth.sides.find({ formula = formula })[1]
+  if wesnoth.sides then
+    local formula = string.format("wml_vars.biome = '%s'", self.name)
+    return wesnoth.sides.find({ formula = formula })[1]
+  end
 end
 
 function Biome:time_area(it, state)
@@ -172,7 +174,7 @@ function Biome.Feature.building(name, image, biome, weigh, init, spawns)
     if #self.spawns < 1 then
       return
     end
-    local side = self.biome:side()
+    local side = self.side or self.biome:side()
     local zones = as_table(
       filter_map(
         function(burial)
@@ -216,7 +218,7 @@ function Biome.Feature.building(name, image, biome, weigh, init, spawns)
   function b:micro_ai(hexes)
     return {
       ai_type = "zone_guardian",
-      side = self.biome:side().side,
+      side = self.side.side or self.biome:side().side,
       action = "add",
       wml.tag.filter({ role = self.name }),
       wml.tag.filter_location({

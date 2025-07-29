@@ -20,7 +20,7 @@ Gen = {
 
 function Gen:border_height(hex)
   hex.height = - mathx.min(2, mathx.floor(mathx.random(1, 6) / 2))
-  Ocean:add_hex(hex)
+  Biomes.ocean:add_hex(hex)
 end
 
 function Gen:fjord_height(hex)
@@ -52,7 +52,7 @@ function Gen:height_map()
   while not hex.height do
     set_height(self, hex)
     if hex.height < -1 then
-      Ocean:add_hex(hex)
+      Biomes.ocean:add_hex(hex)
     end
     hex.biome:add_hex(hex) -- this is a hacky way of setting terrain
     x, y = v:translate(x, y)

@@ -63,24 +63,31 @@ local function origin(biome)
   return origin
 end
 
-Ocean = Biome:new("ocean", 1)
-Ocean.heights = {
+local Biomes = {}
+
+Biomes.ocean = Biome:new("ocean", 1)
+Biomes.meadows = Biome:new("meadows", 200)
+Biomes.forest = Biome:new("forest", 100)
+Biomes.swamp = Biome:new("swamp", 100)
+Biomes.snow = Biome:new("snow", 100)
+Biomes.desert = Biome:new("desert", 100)
+
+Biomes.ocean.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
   [0]  = "Wwr",
 }
-Ocean.colour = "teal"
+Biomes.ocean.colour = "teal"
 
-Meadows = Biome:new("meadows", 200)
-Meadows.heights = {
+Biomes.meadows.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
   [0]  = "Gg",
   [1]  = "Hh",
   [2]  = "Mm",
 }
-Meadows.colour = "green"
-Meadows.spawn = {
+Biomes.meadows.colour = "green"
+Biomes.meadows.spawn = {
   passive = { 
     Spawn:family("Woodland Boar", "Piglet", 2, 4),
     Spawn:new("Raven"),
@@ -96,8 +103,8 @@ Meadows.spawn = {
                      id = "meadows-boss",
   })
 }
-Meadows:add_feat(altar(Meadows))
-Meadows:add_feat(
+Biomes.meadows:add_feat(altar(Biomes.meadows))
+Biomes.meadows:add_feat(
   Biome.Feature.castle(
     "Ker", "Cer",
     function(feat, hex)
@@ -125,30 +132,31 @@ Meadows:add_feat(
     { central_camp = false }
   )
 )
-Meadows:add_feat(
-  Biome.Feature.building(
-    "burial",
-    "items/burial.png",
-    Meadows,
-    function(self, hex) --weigh
-      if hex.height < 0 then
-        return { weight = 0, feat = self }
-      else
-        local dist = hex:distance(Biome.Feature.center)
-        local w = mathx.floor(mathx.max(0, 5 - ((dist - 15) ^ 2)))
-        return { weight = w - (self.count or 0), feat = self }
-      end
-    end,
-    function(self, hex, scenario) -- init
-      self.count = (self.count or 0) + 1
-    end,
-    {
-      Spawn:new("Skeleton", { role = "burial" }),
-      Spawn:new("Skeleton Archer", { role = "burial" })
-    }
-  )
+local swamp = Biomes.swamp:side() or {}
+local burial = Biome.Feature.building(
+  "burial",
+  "items/burial.png",
+  Biomes.meadows,
+  function(self, hex) --weigh
+    if hex.height < 0 then
+      return { weight = 0, feat = self }
+    else
+      local dist = hex:distance(Biome.Feature.center)
+      local w = mathx.floor(mathx.max(0, 5 - ((dist - 15) ^ 2)))
+      return { weight = w - (self.count or 0), feat = self }
+    end
+  end,
+  function(self, hex, scenario) -- init
+    self.count = (self.count or 0) + 1
+  end,
+  {
+    Spawn:new("Skeleton", { role = "burial", side = swamp.side }),
+    Spawn:new("Skeleton Archer", { role = "burial", side = swamp.side })
+  }
 )
-Meadows:add_feat(
+burial.side = swamp
+Biomes.meadows:add_feat(burial)
+Biomes.meadows:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "village", 10,
     function(hex, neighbours)
@@ -161,7 +169,7 @@ Meadows:add_feat(
     { { terrain = "Vhr", weight = 1 }, { terrain = "Vhhr", weight = 1 } }
   )
 )
-Meadows:add_feat(
+Biomes.meadows:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
     function(hex, neighbours)
@@ -175,18 +183,17 @@ Meadows:add_feat(
       { terrain = "Fet", weight = 1 } }
   )
 )
-Meadows:add_feat(origin(Meadows))
+Biomes.meadows:add_feat(origin(Biomes.meadows))
 
-Forest = Biome:new("forest", 100)
-Forest.heights = {
+Biomes.forest.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
   [0]  = "Gll",
   [1]  = "Hh",
   [2]  = "Md",
 }
-Forest.colour = "brown"
-Forest:add_feat(
+Biomes.forest.colour = "brown"
+Biomes.forest:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
     function(hex, neighbours)
@@ -199,19 +206,18 @@ Forest:add_feat(
     { { terrain = "Fp", weight = 1 } }
   )
 )
-Forest.keep = "Kv"
-Forest.camp = "Cv"
+Biomes.forest.keep = "Kv"
+Biomes.forest.camp = "Cv"
 
-Swamp = Biome:new("swamp", 100)
-Swamp.heights = {
+Biomes.swamp.heights = {
   [-2] = "Ww",
   [-1] = "Ss",
   [0]  = "Ss",
   [1]  = "Sm",
   [2]  = "Hhd",
 }
-Swamp.colour = "black"
-Swamp:add_feat(
+Biomes.swamp.colour = "black"
+Biomes.swamp:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
     function(hex, neighbours)
@@ -228,7 +234,7 @@ Swamp:add_feat(
     }
   )
 )
-Swamp:add_feat(
+Biomes.swamp:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "village", 5,
     function(hex, neighbours)
@@ -237,19 +243,18 @@ Swamp:add_feat(
     { { terrain = "Vhs", weight = 1 } }
   )
 )
-Swamp.keep = "Khs"
-Swamp.camp = "Chs"
+Biomes.swamp.keep = "Khs"
+Biomes.swamp.camp = "Chs"
 
-Snow = Biome:new("snow", 100)
-Snow.heights = {
+Biomes.snow.heights = {
   [-2] = "Wo",
   [-1] = "Ai",
   [0]  = "Aa",
   [1]  = "Ha",
   [2]  = "Ms",
 }
-Snow.colour = "white"
-Snow:add_feat(
+Biomes.snow.colour = "white"
+Biomes.snow:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
     function(hex, neighbours)
@@ -267,7 +272,7 @@ Snow:add_feat(
     }
   )
 )
-Snow:add_feat(
+Biomes.snow:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "village", 5,
     function(hex, neighbours)
@@ -280,19 +285,18 @@ Snow:add_feat(
     { { terrain = "Voa", weight = 1 }, { terrain = "Vaa", weight = 1} }
   )
 )
-Snow.keep = "Koa"
-Snow.camp = "Coa"
+Biomes.snow.keep = "Koa"
+Biomes.snow.camp = "Coa"
 
-Desert = Biome:new("desert", 100)
-Desert.heights = {
+Biomes.desert.heights = {
   [-2] = "Wo",
   [-1] = "Ww",
   [0]  = "Dd",
   [1]  = "Hd",
   [2]  = "Mdd",
 }
-Desert.colour = "orange"
-Desert:add_feat(
+Biomes.desert.colour = "orange"
+Biomes.desert:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "forest", 1,
     function(hex, neighbours)
@@ -305,7 +309,7 @@ Desert:add_feat(
     { { terrain = "Ftd", weight = 1 }  }
   )
 )
-Desert:add_feat(
+Biomes.desert:add_feat(
   Biome.Feature.neighbourhood_overlay(
     "village", 5,
     function(hex, neighbours)
@@ -318,19 +322,14 @@ Desert:add_feat(
     { { terrain = "Vdt", weight = 1 }, { terrain = "Vdr", weight = 1} }
   )
 )
-Desert.keep = "Kdr"
-Desert.camp = "Cdr"
+Biomes.desert.keep = "Kdr"
+Biomes.desert.camp = "Cdr"
 
+table.insert(Biomes, Biomes.meadows)
+table.insert(Biomes, Biomes.forest)
+table.insert(Biomes, Biomes.swamp)
+table.insert(Biomes, Biomes.snow)
+table.insert(Biomes, Biomes.desert)
+table.insert(Biomes, Biomes.ocean)
 
-return {
-  meadows = Meadows,
-  forest = Forest,
-  swamp = Swamp,
-  snow = Snow,
-  desert = Desert,
-  Meadows,
-  Forest,
-  Swamp,
-  Snow,
-  Desert,
-}
+return Biomes
