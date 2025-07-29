@@ -139,6 +139,7 @@ function Biome.Feature.building(name, image, biome, weigh, init, spawns)
     name = name,
     img = image,
     weigh = weigh,
+    biome = biome,
     init = init,
     spawns = spawns or {}
   }
@@ -151,7 +152,11 @@ function Biome.Feature.building(name, image, biome, weigh, init, spawns)
       visible_in_fog = true,
     }
     table.insert(scenario, wml.tag.item(item))
-    local side = wml.find_child(scenario, "side", { wml.tag.variables({ biome = biome.name })})
+    local side = wml.find_child(
+      scenario,
+      "side",
+      { wml.tag.variables({ biome = self.biome.name }) }
+    )
     local vars = wml.get_child(wml.get_child(side, "variables"), "buildings")
     local building = { x = hex.x, y = hex.y }
     table.insert(vars, wml.tag[self.name](building))
@@ -159,7 +164,57 @@ function Biome.Feature.building(name, image, biome, weigh, init, spawns)
   end
 
   function b:spawn(hexes)
-    
+    if #self.spawns < 1 then
+      return
+    end
+    local zones = as_table(
+      filter_map(
+        function(burial)
+          local enemies_nerby = wesnoth.units.find({
+              wml.tag.filter_side({ team_name = "Bohaterowie" }),
+              x = burial.x, y = burial.y,
+              radius = 5,
+          })
+          if #enemies_nearby > 0 then
+            local zone = wesnoth.map.find({
+                x = burial.x, y = burial.y,
+                radius = 3,
+                time_of_day = "night",
+            })
+            if #zone > 0 then
+              return zone
+            end
+          end
+        end,
+        iter(hexes)
+      )
+    )
+    if #zones > 0 then
+      local z = zones[mathx.random(#zones)]
+      local h = z[mathx.random(#z)]
+      local spawn = self.spawns[mathx.random(#self.spawns)]
+      local side = wesnoth.sides.find({
+          formula = string.format("wml_vars.biome = '%s'", self.biome.name)
+      })
+      spawn:spawn(h, side)
+    end
+  end
+
+  function b:micro_ai(hexes)
+    local side = wesnoth.sides.find({
+        formula = string.format("wml_vars.biome = '%s'", self.biome.name)
+    })
+    return {
+      ai_type = "zone_guardian",
+      side = side.side,
+      action = "add",
+      wml.tag.filter({ role = self.name }),
+      wml.tag.filter_location({
+          x = str.join(map(function(h) return h.x end, iter(hexes)), ","),
+          y = str.join(map(function(h) return h.y end, iter(hexes)), ","),
+          radius = 3,
+      })
+    }
   end
 
   return setmetatable(b, Biome.Feature)
@@ -174,6 +229,11 @@ end
 
 function Biome.FeatureSet:add(feat)
   table.insert(self, feat)
+  self[feat.name] = feat
+end
+
+function Biome.FeatureSet:find(name)
+  return self[name]
 end
 
 function Biome.FeatureSet:remove(name)

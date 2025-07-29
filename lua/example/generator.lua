@@ -204,13 +204,7 @@ function Gen:make(cfg)
   self:expand_biomes()
 
   Biome.Feature.center = self.center
-  self.center.feature = Biome.Feature.building(
-    "origin",
-    "items/altar.png",
-    Meadows,
-    function(self, hex) return {} end,
-    function(self, hex) end
-  )
+  self.center.feature = Biomes.meadows.features:find("origin")
   self.center.feature:apply(self.center, s)
   for hex in self.map:iter() do
     if hex.biome then

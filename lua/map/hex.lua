@@ -76,6 +76,11 @@ function Hex:has_feature(name)
   return self.feature and (not name or self.feature.name == name)
 end
 
+function Hex:at_night()
+  local schedule = wesnoth.schedule.get_time_of_day(self)
+  return schedule.lawful_bonus < 0
+end
+
 Hex.Set = {}
 Hex.Set.__index = Hex.Set
 
