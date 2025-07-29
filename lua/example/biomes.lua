@@ -4,7 +4,7 @@ Spawn = require("scenario_toolbox/lua/units/spawn")
 
 
 local function altar(biome)
-  local altar = Biome.Feature.building(
+  local altar = Biome.Feature.site(
     "altar",
     "items/altar-evil.png",
     biome,
@@ -49,7 +49,7 @@ local function altar(biome)
 end
 
 local function origin(biome)
-  local origin = Biome.Feature.building(
+  local origin = Biome.Feature.site(
     "origin",
     "items/altar.png",
     biome,
@@ -133,7 +133,7 @@ Biomes.meadows:add_feat(
   )
 )
 local swamp = Biomes.swamp:side() or {}
-local burial = Biome.Feature.building(
+local burial = Biome.Feature.site(
   "burial",
   "items/burial.png",
   Biomes.meadows,

@@ -192,7 +192,7 @@ function Gen:make(cfg)
         team_name = biome.name,
         defeat_condition = "never",
     }
-    local vars = { biome = biome.name, wml.tag.buildings({}) }
+    local vars = { biome = biome.name, wml.tag.sites({}) }
     table.insert(boss, wml.tag.variables(vars))
     table.insert(s, wml.tag.side(boss))
   end

@@ -59,15 +59,15 @@ micro_ai = {
 
 for enemy in iter(enemies) do
   local biome = Biomes[enemy.variables.biome]
-  biome.buildings = {}
-  for building in iter(enemy.variables.buildings) do
-    if biome.buildings[building[1]] then
-      table.insert(biome.buildings[building[1]], building[2])
+  biome.sites = {}
+  for site in iter(enemy.variables.sites) do
+    if biome.sites[site[1]] then
+      table.insert(biome.sites[site[1]], site[2])
     else
-      biome.buildings[building[1]] = { building[2] }
+      biome.sites[site[1]] = { site[2] }
     end
   end
-  for site, hexes in pairs(biome.buildings) do
+  for site, hexes in pairs(biome.sites) do
     local feat = biome.features:find(site)
     if feat and feat.micro_ai then
       local mai = feat:micro_ai(hexes)
@@ -82,7 +82,7 @@ wesnoth.game_events.add({
     content = micro_ai
 })
 
-local altars = filter_map(get("buildings", "altar", 1), iter(Biomes))
+local altars = filter_map(get("sites", "altar", 1), iter(Biomes))
 wesnoth.game_events.add({
     name = "prestart",
     id = "setup_summons_menu",
@@ -112,14 +112,14 @@ wesnoth.game_events.add_menu(
     local hex = Hex:from_wesnoth(wesnoth.map.get(wml.variables.x1, wml.variables.y1))
     local side = filter(
       function(s)
-        local altar = wml.get_child(s.variables.buildings, "altar")
+        local altar = wml.get_child(s.variables.sites, "altar")
         return hex:equals(altar)
       end,
       iter(enemies)
     )()
     local u = wesnoth.units.find({ Inventory.filter.has_item("bones") })[1]
     Inventory.consume(u, "bones", 1)
-    local altar = wml.get_child(side.variables.buildings, "altar")
+    local altar = wml.get_child(side.variables.sites, "altar")
     local spawn = Biomes[side.variables.biome].spawn.boss
     local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, { type = spawn.unit_type })
     local hex = { x = x, y = y }
@@ -223,7 +223,7 @@ wesnoth.game_events.add({
       local side = wesnoth.sides[wml.variables.side_number]
       local biome = Biomes[side.variables.biome]
       local time = wesnoth.schedule.get_time_of_day(biome.name)
-      for name, sites in pairs(biome.buildings) do -- site-specific spawn
+      for name, sites in pairs(biome.sites) do -- site-specific spawn
         local f = biome.features:find(name)
         f:spawn(sites)
       end
