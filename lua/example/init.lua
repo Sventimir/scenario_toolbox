@@ -2,6 +2,7 @@ wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 local Hex = require("scenario_toolbox/lua/map/hex")
 Biomes = require("scenario_toolbox/lua/example/biomes")
+Inventory = require("scenario_toolbox/lua/units/inventory")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
@@ -88,16 +89,16 @@ wesnoth.game_events.add({
     content = {
         wml.tag.set_menu_item({
                   id = "summon_menu",
-                  description = "Przywołanie Zbuntowanego",
+                  description = "Przywołanie Przedwiecznego",
                   wml.tag.filter_location({
                       x = str.join(map(get("x"), altars), ","),
                       y = str.join(map(get("y"), altars), ","),
                       wml.tag["and"]({
                                 wml.tag.filter_adjacent_location({
-                                    wml.tag.filter({ canrecruit = true })
+                                    wml.tag.filter({ Inventory.filter.has_item("bones") })
                                 }),
                                 wml.tag["or"]({
-                                    wml.tag.filter({ canrecruit = true })
+                                    wml.tag.filter({ Inventory.filter.has_item("bones") })
                                 })
                       })
                   }),
@@ -116,6 +117,8 @@ wesnoth.game_events.add_menu(
       end,
       iter(enemies)
     )()
+    local u = wesnoth.units.find({ Inventory.filter.has_item("bones") })[1]
+    Inventory.consume(u, "bones", 1)
     local altar = wml.get_child(side.variables.buildings, "altar")
     local spawn = Biomes[side.variables.biome].spawn.boss
     local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, { type = spawn.unit_type })
@@ -126,8 +129,8 @@ wesnoth.game_events.add_menu(
         y = altar.y,
         radius = 3,
         wml.tag.time({
-            name = "Aura Zbuntowanego Imiędoustalenia",
-            description = "Wokół Zbuntowanego panuje ciemność i burza z piorunami.",
+            name = "Aura Przedwiecznego Imiędoustalenia",
+            description = "Wokół Przedwiecznego panuje ciemność i burza z piorunami.",
             image = "misc/time-schedules/schedule-midnight.png",
             lawful_bonus = -25,
             red = -75,
@@ -163,6 +166,24 @@ wesnoth.game_events.add({
       local u = wml.variables.unit
       wesnoth.sides[u.side].variables.dead_leader = wml.variables.unit
     end,
+})
+
+wesnoth.game_events.add({
+    name = "die",
+    id = "skeleton-defeated",
+    first_time_only = false,
+    filter = {
+      unit = { type = [[ Skeleton,Skeleton Archer,Skeleton Rider,Skeletal Dragon,
+                         Revenant,Lich,Draug,Deathblade,Death Squire,Death Knight,
+                         Chocobone,Bone Shooter,Bone Knight,Banebow,Ancient Lich ]] },
+      second_unit = { side = players_str },
+    },
+    action = function()
+      local killer = wesnoth.units.get(wml.variables.second_unit)
+      local inventory = Inventory.get(killer)
+      inventory:add("bones")
+      inventory:save()
+    end
 })
 
 wesnoth.game_events.add({
