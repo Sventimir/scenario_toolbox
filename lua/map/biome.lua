@@ -148,7 +148,7 @@ function Biome.Feature.site(name, image, biome, weigh, init, spawns)
     weigh = weigh,
     biome = biome,
     init = init,
-    spawns = spawns or {}
+    spawns = spawns or {},
   }
 
   function b:apply(hex, scenario)

@@ -43,6 +43,14 @@ local function altar(biome)
     end
   end
 
+  function altar:description(speaker)
+    return {
+      portrait = speaker,
+      title = "Ołtarz Przedwiecznego",
+      message = "Oto ołtarz przedwiecznego. Wyryty na nim napis głosi: \"Któryż pies oprze się rzuconej mu kości?\""
+    }
+  end
+
   function altar:micro_ai() return nil end
   
   return altar
@@ -59,6 +67,15 @@ local function origin(biome)
   )
 
   function origin:micro_ai() return nil end
+
+  function origin:description(speaker)
+    return {
+      portrait = speaker,
+      title = "Ołtarz Baziola",
+      message = "Na tym ołtarzu Praojciec Baziol przyjmuje ofiary z pokonanych przedwiecznych. "
+        .. "Obecnie naszym celem jest Imiędoustalenia, którego szukać należy na łąkach."
+    }
+  end
 
   return origin
 end
@@ -154,6 +171,13 @@ local burial = Biome.Feature.site(
     Spawn:new("Skeleton Archer", { role = "burial", side = swamp.side })
   }
 )
+function burial:description(speaker)
+  return {
+    portrait = speaker,
+    title = "Miejsce pochówku",
+    message = "To wygląda na miejsce pochówku pradawnego bohatera. Pewnie jest nawiedzone..."
+  }
+end
 burial.side = swamp
 Biomes.meadows:add_feat(burial)
 Biomes.meadows:add_feat(

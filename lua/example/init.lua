@@ -8,6 +8,7 @@ local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
 local enemies = wesnoth.sides.find({ wml.tag["not"]({ team_name = "Bohaterowie" }) })
 local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
+local sites = Hex.Set:new()
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
 micro_ai = {
@@ -66,6 +67,7 @@ for enemy in iter(enemies) do
     else
       biome.sites[site[1]] = { site[2] }
     end
+    sites:add({ x = site[2].x, y = site[2].y, biome = biome.name, name = site[1]})
   end
   for site, hexes in pairs(biome.sites) do
     local feat = biome.features:find(site)
@@ -98,6 +100,9 @@ local objectives = {
       wml.tag.note({
           description = "Wskazówkę co do wymaganej ofiary można znaleźć przy ołtarzu przedwiecznego.",
       }),
+      wml.tag.note({
+          description = "Specjalne lokacje zawierają opisy. Podejdź do nich dowoną jednostką i kliknij prawym przyciskiem aby się im przyjrzeć."
+      }),
   })
 }
 
@@ -108,6 +113,7 @@ wesnoth.game_events.add({
 })
 
 local altars = filter_map(get("sites", "altar", 1), iter(Biomes))
+local sites_x, sites_y = sites:as_area()
 wesnoth.game_events.add({
     name = "prestart",
     id = "setup_summons_menu",
@@ -127,9 +133,41 @@ wesnoth.game_events.add({
                                 })
                       })
                   }),
+        }),
+        wml.tag.set_menu_item({
+            id = "description_menu",
+            description = "Zbadaj to miejsce",
+            image = "images/misc/eye.png",
+            wml.tag.filter_location({
+                x = str.join(map(get("x"), iter(sites)), ","),
+                y = str.join(map(get("y"), iter(sites)), ","),
+                wml.tag["and"]({
+                    wml.tag.filter_adjacent_location({
+                        wml.tag.filter({ side = "$side_number" })
+                    }),
+                    wml.tag["or"]({
+                        wml.tag.filter({ side = "$side_number" })
+                    })
+                }),
+            })
         })
     }
 })
+
+wesnoth.game_events.add_menu(
+    "description_menu",
+    function()
+      local x = wml.variables.x1
+      local y = wml.variables.y1
+      local speaker = wesnoth.units.find({
+          side = "$side_number",
+          wml.tag.filter_location({ x = x, y = y, radius = 1 })
+      })[1]
+      local site = sites:get(x, y)
+      local feature = Biomes[site.biome].features:find(site.name)
+      gui.show_narration(feature:description(speaker.portrait))
+    end
+)
 
 wesnoth.game_events.add_menu(
   "summon_menu",
@@ -165,7 +203,8 @@ wesnoth.game_events.add_menu(
     })
     local avatar = spawn:spawn(hex, side.side)
     avatar[1].role = "boss"
-end)
+  end
+)
 
 wesnoth.game_events.add({
     name = "die",

@@ -126,12 +126,31 @@ function Hex.Set:random()
   return it()
 end
 
+function Hex.Set:get(x, y)
+  if self[y] then
+    return self[y][x]
+  end
+end
+
 function Hex.Set:member(hex)
   if self[hex.y] then
     return self[hex.y][hex.x] and true or false
   else
     return false
   end
+end
+
+function Hex.Set:as_area()
+  local it = self:iter()
+  local h = it()
+  if not h then return nil end
+  local x = string.format("%i", h.x)
+  local y = string.format("%i", h.y)
+  for h in it do
+    x = string.format("%s,%i", x, h.x)
+    y = string.format("%s,%i", y, h.y)
+  end
+  return x, y
 end
 
 function Hex.Set:memeber_pred()
