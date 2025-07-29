@@ -47,7 +47,7 @@ local function altar(biome)
     return {
       portrait = speaker,
       title = "Ołtarz Przedwiecznego",
-      message = "Oto ołtarz przedwiecznego. Wyryty na nim napis głosi: \"Któryż pies oprze się rzuconej mu kości?\""
+      message = "Oto ołtarz Shazzy. Wyryty na nim napis głosi: \"Któryż pies oprze się rzuconej mu kości?\""
     }
   end
 
@@ -73,7 +73,7 @@ local function origin(biome)
       portrait = speaker,
       title = "Ołtarz Baziola",
       message = "Na tym ołtarzu Praojciec Baziol przyjmuje ofiary z pokonanych przedwiecznych. "
-        .. "Obecnie naszym celem jest Imiędoustalenia, którego szukać należy na łąkach."
+        .. "Obecnie naszym celem jest Shazza, której szukać należy na łąkach."
     }
   end
 
@@ -116,7 +116,7 @@ Biomes.meadows.spawn = {
   },
   boss = Spawn:new("Great Wolf", {
                      max_hitpoints = 90,
-                     name = "Imiędoustalenia",
+                     name = "Shazza",
                      id = "meadows-boss",
   })
 }

@@ -4,6 +4,7 @@ local Hex = require("scenario_toolbox/lua/map/hex")
 Biomes = require("scenario_toolbox/lua/example/biomes")
 Inventory = require("scenario_toolbox/lua/units/inventory")
 OpeningDialogue = require("scenario_toolbox/lua/example/dialogues/opening")
+ShazzaDialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
@@ -82,10 +83,10 @@ end
 local objectives = {
   wml.tag.objectives({
       team_name = "Bohaterowie",
-      summary = "Odnajdź i pokonaj Przedwiecznego Imiędoustalenia.",
+      summary = "Odnajdź i pokonaj Przedwieczną Shazzę.",
       wml.tag.objective({
           condition = "win",
-          description = "Odnajdź ołtarz przywołania Przedwiecznego.",
+          description = "Odnajdź ołtarz przywołania Przedwiecznej.",
       }),
       wml.tag.objective({
           condition = "win",
@@ -93,7 +94,7 @@ local objectives = {
       }),
       wml.tag.objective({
           condition = "win",
-          description = "Pokonaj Przedwiecznego.",
+          description = "Pokonaj Przedwieczną.",
       }),
       wml.tag.note({
           description = "Ołtarz znajduje się gdzieś na łąkach wyspy.",
@@ -204,8 +205,8 @@ wesnoth.game_events.add_menu(
         y = altar.y,
         radius = 3,
         wml.tag.time({
-            name = "Aura Przedwiecznego Imiędoustalenia",
-            description = "Wokół Przedwiecznego panuje ciemność i burza z piorunami.",
+            name = "Aura Przedwiecznej Shazzy",
+            description = "Wokół Przedwiecznej Istoty panuje ciemność i burza z piorunami.",
             image = "misc/time-schedules/schedule-midnight.png",
             lawful_bonus = -25,
             red = -75,
@@ -215,6 +216,9 @@ wesnoth.game_events.add_menu(
     })
     local avatar = spawn:spawn(hex, side.side)
     avatar[1].role = "boss"
+    local u2 = wesnoth.units.find({ side = "1,2", wml.tag["not"]({ x = u.x, y = u.y}) })[1]
+    local d = ShazzaDialogue(avatar, u, u2)
+    d:play()
   end
 )
 
