@@ -152,8 +152,8 @@ wesnoth.game_events.add({
             description = "Zbadaj to miejsce",
             image = "images/misc/eye.png",
             wml.tag.filter_location({
-                x = str.join(map(get("x"), iter(sites)), ","),
-                y = str.join(map(get("y"), iter(sites)), ","),
+                x = sites_x,
+                y = sites_y,
                 wml.tag["and"]({
                     wml.tag.filter_adjacent_location({
                         wml.tag.filter({ side = "$side_number" })
