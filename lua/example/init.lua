@@ -68,6 +68,7 @@ for enemy in iter(enemies) do
       table.insert(biome.sites[site[1]], site[2])
     else
       biome.sites[site[1]] = { site[2] }
+      table.insert(biome.sites, site[1]) -- we need a way to reliably iterate over this
     end
     sites:add({ x = site[2].x, y = site[2].y, biome = biome.name, name = site[1]})
   end
@@ -303,9 +304,9 @@ wesnoth.game_events.add({
       local side = wesnoth.sides[wml.variables.side_number]
       local biome = Biomes[side.variables.biome]
       local time = wesnoth.schedule.get_time_of_day(biome.name)
-      for name, sites in pairs(biome.sites) do -- site-specific spawn
-        local f = biome.features:find(name)
-        f:spawn(sites)
+      for site_type in iter(biome.sites) do -- site-specific spawn
+        local f = biome.features:find(site_type)
+        f:spawn(biome.sites[site_type])
       end
       if time.lawful_bonus < 0 and #biome.spawn.passive > 0 then -- passive spawn
         local filt = inactive_spawn_filter(biome.name, side.side)
