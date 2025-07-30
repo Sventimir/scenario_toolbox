@@ -2,6 +2,7 @@ wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 local Hex = require("scenario_toolbox/lua/map/hex")
 Biomes = require("scenario_toolbox/lua/example/biomes")
+Item = require("scenario_toolbox/lua/item")
 Inventory = require("scenario_toolbox/lua/units/inventory")
 OpeningDialogue = require("scenario_toolbox/lua/example/dialogues/opening")
 ShazzaDialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
@@ -260,10 +261,7 @@ wesnoth.game_events.add({
       second_unit = { side = players_str },
     },
     action = function()
-      local killer = wesnoth.units.get(wml.variables.second_unit)
-      local inventory = Inventory.get(killer)
-      inventory:add("bones")
-      inventory:save()
+      Item.bones:drop(wml.variables.unit)
     end
 })
 
