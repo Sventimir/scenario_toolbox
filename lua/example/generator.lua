@@ -164,7 +164,7 @@ function Gen:make(cfg)
         leader_lock = false,
         fog = true,
         shroud = true,
-        gold = 50,
+        gold = 30,
         hidden = false,
         income = 0,
         village_gold = 0,
