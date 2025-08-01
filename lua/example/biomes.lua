@@ -82,12 +82,12 @@ end
 
 local Biomes = {}
 
-Biomes.ocean = Biome:new("ocean", 1)
-Biomes.meadows = Biome:new("meadows", 200)
-Biomes.forest = Biome:new("forest", 100)
-Biomes.swamp = Biome:new("swamp", 100)
-Biomes.snow = Biome:new("snow", 100)
-Biomes.desert = Biome:new("desert", 100)
+Biomes.ocean = Biome:new("ocean")
+Biomes.meadows = Biome:new("meadows")
+Biomes.forest = Biome:new("forest")
+Biomes.swamp = Biome:new("swamp")
+Biomes.snow = Biome:new("snow")
+Biomes.desert = Biome:new("desert")
 
 Biomes.ocean.heights = {
   [-2] = "Wo",
@@ -95,6 +95,7 @@ Biomes.ocean.heights = {
   [0]  = "Wwr",
 }
 Biomes.ocean.colour = "teal"
+Biomes.ocean:add_feat(Biome.Feature.none(1))
 
 Biomes.meadows.heights = {
   [-2] = "Wo",
@@ -208,6 +209,7 @@ Biomes.meadows:add_feat(
   )
 )
 Biomes.meadows:add_feat(origin(Biomes.meadows))
+Biomes.meadows:add_feat(Biome.Feature.none(90))
 
 Biomes.forest.heights = {
   [-2] = "Wo",
@@ -230,8 +232,7 @@ Biomes.forest:add_feat(
     { { terrain = "Fp", weight = 1 } }
   )
 )
-Biomes.forest.keep = "Kv"
-Biomes.forest.camp = "Cv"
+Biomes.forest:add_feat(Biome.Feature.none(10))
 
 Biomes.swamp.heights = {
   [-2] = "Ww",
@@ -267,6 +268,7 @@ Biomes.swamp:add_feat(
     { { terrain = "Vhs", weight = 1 } }
   )
 )
+Biomes.swamp:add_feat(Biome.Feature.none(65))
 Biomes.swamp.keep = "Khs"
 Biomes.swamp.camp = "Chs"
 
@@ -309,6 +311,7 @@ Biomes.snow:add_feat(
     { { terrain = "Voa", weight = 1 }, { terrain = "Vaa", weight = 1} }
   )
 )
+Biomes.snow:add_feat(Biome.Feature.none(65))
 Biomes.snow.keep = "Koa"
 Biomes.snow.camp = "Coa"
 
@@ -346,6 +349,7 @@ Biomes.desert:add_feat(
     { { terrain = "Vdt", weight = 1 }, { terrain = "Vdr", weight = 1} }
   )
 )
+Biomes.desert:add_feat(Biome.Feature.none(75))
 Biomes.desert.keep = "Kdr"
 Biomes.desert.camp = "Cdr"
 

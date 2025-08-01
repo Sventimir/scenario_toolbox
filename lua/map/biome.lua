@@ -58,6 +58,12 @@ function Biome:add_feat(feat)
   self.features:add(feat)
 end
 
+function Biome:from_wml(spec)
+  local biome = Biome:new()
+
+  return biome
+end
+
 Biome.Feature = {}
 Biome.Feature.__index = Biome.Feature
 
@@ -232,6 +238,19 @@ function Biome.Feature.site(name, image, biome, weigh, init, spawns)
   return setmetatable(b, Biome.Feature)
 end
 
+function Biome.Feature.none(weight)
+  local feat = setmetatable({ name = "none", weight = weight }, Biome.Feature)
+
+  function feat:weigh(hex)
+    return { weight = self.weight, feat = self }
+  end
+
+  function feat:apply()
+  end
+
+  return feat
+end
+
 Biome.FeatureSet = {}
 Biome.FeatureSet.__index = Biome.FeatureSet
 
@@ -272,7 +291,7 @@ function Biome.FeatureSet:assign(hex)
   -- base_weight makes it so that total should be greater than 0
   -- it also adds a chance that no feature will be selected (nil
   -- will be returned).
-  local roll = mathx.random(0, mathx.max(total, self.total_weight) - 1)
+  local roll = mathx.random(0, total - 1)
   for feat in iter(feats) do
     if roll < feat.weight then
       feat.feat:assign(hex, roll)
