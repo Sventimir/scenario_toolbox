@@ -197,6 +197,10 @@ function Gen:make(cfg)
   self.center.feature = Biomes.meadows.features:find("origin")
   self.center.feature:apply(self.center, s)
 
+  local camp = Hex.Set:new(self.center:circle(3)):pop_random()
+  camp.feature = Biomes.meadows.features:find("castle")
+  camp.feature:apply(camp, s)
+
   local hexes = Hex.Set:new(self.map:iter())
   while hexes.size > 0 do
     local hex = hexes:pop_random()

@@ -129,18 +129,19 @@ Biomes.meadows:add_feat(
     "Ker", "Cer",
     function(feat, hex)
       local center_dist = hex:distance(Biome.Feature.center)
-      if center_dist == 3 then
-        return { weight = feat.central_camp and 0 or 100, feat = feat }
-      elseif hex.height < 0 or center_dist < 7 then
+      local castles = count(
+        filter(
+          function(h) return h.feature and h.feature.name == "castle" end,
+          hex:in_circle(5)
+        )
+      )
+      if castles > 0 or hex.height < 0 or center_dist < 7 then
         return { weight = 0, feat = feat }
       else
         return { weight = 1, feat = feat }
       end
     end,
     function(self, keep)
-      if keep:distance(Biome.Feature.center) == 3 then
-        self.central_camp = true
-      end
       local hexes = filter(
         function(h)
           return not h.feature and h.height >= 0
@@ -149,7 +150,7 @@ Biomes.meadows:add_feat(
       )
       return take(mathx.random(2, 3), hexes)
     end,
-    { central_camp = false }
+    { }
   )
 )
 local swamp = Biomes.swamp:side() or {}
