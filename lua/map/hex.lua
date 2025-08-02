@@ -45,7 +45,7 @@ function Hex:translate(v)
 end
 
 function Hex:circle(radius)
-  return map(function(v) return self:translate(v) end, Vec.equidistant(radius))
+  return filter_map(function(v) return self:translate(v) end, Vec.equidistant(radius))
 end
 
 function Hex:in_circle(radius)
