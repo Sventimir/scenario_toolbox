@@ -17,13 +17,20 @@ Gen = {
   biome_centers = {},
 }
 
+function Gen:mean_height_around(hex)
+  return arith.round(
+    arith.mean(filter_map(hex_height, hex:circle(1)))
+    or mathx.random(-2, 2)
+  )
+end
+
 function Gen:border_height(hex)
   hex.height = - mathx.min(2, mathx.floor(mathx.random(1, 6) / 2))
   Biomes.ocean:add_hex(hex)
 end
 
 function Gen:fjord_height(hex)
-  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))))
+  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
   local h = mean + mathx.random(-1, 1)
   if h >= 0 and mean <= 0 then
     h = h + mathx.random(0, 1)
@@ -32,7 +39,7 @@ function Gen:fjord_height(hex)
 end
 
 function Gen:interior_height(hex)
-  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))))
+  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
   local d = arith.round(mathx.random(-2, 2) / 2)
   if d > 0 then
     d = d + mathx.random(0, 1)
@@ -40,38 +47,34 @@ function Gen:interior_height(hex)
   hex.height = mathx.max(-2, mathx.min(2, mean + d))
 end
 
-function Gen:height_map()
-  local x = 0
-  local y = 0
-  local next_movement = cycle({ CartVec.east, CartVec.south, CartVec.west, CartVec.north })
-  local v = next_movement()
-  local hex = self.map:get(x, y)
-  local set_height = self.border_height
+function Gen:within_fjord_border(hex)
+  return hex.x > 2 and hex.x < self.map.width - 2
+    and  hex.y > 2 and hex.y < self.map.height - 2
+end
 
-  while not hex.height do
-    set_height(self, hex)
+function Gen:height_map()
+  self.center = self.map:get(self.map.height / 2, self.map.width / 2)
+  self.center.height = 0
+  self.center.terrain = self.center.biome:terrain(self.center)
+
+  local interior_size = (self.map.width + self.map.height) / 10
+  local hexes = Hex.Set:new(self.map:iter())
+  hexes:remove(self.center)
+  while hexes.size > 0 do
+    local hex = hexes:pop_random()
+    if hex:distance(self.center) < interior_size then
+      self:interior_height(hex)
+    elseif self:within_fjord_border(hex) then
+      self:fjord_height(hex)
+    else
+      self:border_height(hex)
+    end
     if hex.height < -1 then
       Biomes.ocean:add_hex(hex)
-    end
-    hex.biome:add_hex(hex) -- this is a hacky way of setting terrain
-    x, y = v:translate(x, y)
-    hex = self.map:get(x, y)
-    if not hex or hex.height then
-      local next_v = next_movement()
-      x, y = (next_v - v):translate(x, y)
-      hex = self.map:get(x, y)
-      v = next_v
-    end
-    if x == 3 and y == 3 then
-      set_height = self.fjord_height
-    elseif x == 10 and y == 10 then
-      set_height = self.interior_height
+    else
+      hex.biome:add_hex(hex)
     end
   end
-
-  self.center = hex
-  self.center.height = 0
-  self.center.terrain = self.center.biome.heights[0]
 end
 
 function Gen:gen_biome_centers()
