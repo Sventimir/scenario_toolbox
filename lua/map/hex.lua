@@ -84,13 +84,15 @@ end
 Hex.Set = {}
 Hex.Set.__index = Hex.Set
 
-function Hex.Set:new(hexes)
+function Hex.Set:new(hexes, state, ctrl)
   local this = setmetatable({}, self)
   this.size = 0
   this.max_row = 0
   this.min_row = 0
-  for hex in hexes or function() end do
-    this:add(hex)
+  if hexes then
+    for hex in hexes, state, ctrl do
+      this:add(hex)
+    end
   end
   return this
 end
@@ -124,6 +126,12 @@ end
 function Hex.Set:random()
   local it = drop(mathx.random(0, self.size - 1), self:iter())
   return it()
+end
+
+function Hex.Set:pop_random()
+  local h = self:random()
+  self:remove(h)
+  return h
 end
 
 function Hex.Set:get(x, y)

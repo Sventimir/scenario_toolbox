@@ -14,7 +14,6 @@ end
 
 Gen = {
   side_color = { "red", "blue", "purple" },
-  biomes = { Biomes.forest, Biomes.swamp, Biomes.desert, Biomes.snow },
   biome_centers = {},
 }
 
@@ -76,30 +75,21 @@ function Gen:height_map()
 end
 
 function Gen:gen_biome_centers()
-  local max_radius = mathx.max(self.map.height, self.map.width) / 2
-  local dist_unit = (self.map.height + self.map.width) / 20
-  local dist = 1
-  for biome in iter(self.biomes) do
-    local count = mathx.random(5 - dist, 7 - dist)
-    local base_dist = dist * dist_unit
-    local all_hexes = {}
-    for r = dist * dist_unit, max_radius do
-      for hex in self.center:circle(r) do
-        if hex.height > 0 then
-          table.insert(all_hexes, hex)
-        end
-      end
-    end
-    local initials = {}
-    for x = 1, count do
-      local i = mathx.random(#all_hexes)
-      biome:add_hex(all_hexes[i])
-      table.insert(initials, all_hexes[i])
-      table.insert(self.biome_centers, all_hexes[i])
-      table.remove(all_hexes, i)
-    end
-
-    dist = dist + 1
+  local hexes = Hex.Set:new(
+    filter(
+      function(h) 
+        return h:distance(self.center) > 10 and h.biome.name == "meadows"
+      end,
+      self.map:iter()
+    )
+  )
+  local biomes = cycle(Biomes)
+  while hexes.size > 0 do
+    local biome = biomes()
+    local hex = hexes:pop_random()
+    hexes = hexes:diff(Hex.Set:new(hex:in_circle(10)))
+    biome:add_hex(hex)
+    table.insert(self.biome_centers, hex)
   end
 end
 

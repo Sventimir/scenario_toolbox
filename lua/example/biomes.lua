@@ -90,9 +90,11 @@ Biomes.snow = Biome:new("snow")
 Biomes.desert = Biome:new("desert")
 
 Biomes.ocean.heights = {
-  [-2] = "Wo",
-  [-1] = "Ww",
-  [0]  = "Wwr",
+  [-2] = "Wog",
+  [-1] = "Wo",
+  [0]  = "Ww",
+  [1]  = "Wwr",
+  [2]  = "Ds"
 }
 Biomes.ocean.colour = "teal"
 Biomes.ocean:add_feat(Biome.Feature.none(1))
