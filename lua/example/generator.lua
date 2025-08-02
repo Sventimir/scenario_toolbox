@@ -196,7 +196,10 @@ function Gen:make(cfg)
   Biome.Feature.center = self.center
   self.center.feature = Biomes.meadows.features:find("origin")
   self.center.feature:apply(self.center, s)
-  for hex in self.map:iter() do
+
+  local hexes = Hex.Set:new(self.map:iter())
+  while hexes.size > 0 do
+    local hex = hexes:pop_random()
     if hex.biome then
       f = hex.biome.features:assign(hex)
       if f then f:apply(hex, s) end
