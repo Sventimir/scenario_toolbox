@@ -2,7 +2,7 @@ Dialogue = {}
 Dialogue.__index = Dialogue
 
 function Dialogue:new()
-  return setmetatable({}, self)
+  return setmetatable({ interrupted = false }, self)
 end
 
 function Dialogue:add(line)
@@ -11,7 +11,9 @@ end
 
 function Dialogue:play()
   for l in iter(self) do
-    l:play()
+    if l:play(self.interrupted) == -2 then -- user pressed Esc.
+      self.interrupted = true
+    end
   end
 end
 
@@ -22,12 +24,14 @@ function Dialogue.Line:new(speaker, message, title)
   return setmetatable({ speaker = speaker, message = message, title = title }, self)
 end
 
-function Dialogue.Line:play()
-  gui.show_narration({
-      portrait = self.speaker.portrait,
-      title = self.title or self.speaker.name,
-      message = self.message,
-  })
+function Dialogue.Line:play(interrupted)
+  if not interrupted then
+    return gui.show_narration({
+        portrait = self.speaker.portrait,
+        title = self.title or self.speaker.name,
+        message = self.message,
+    })
+  end
 end
 
 Dialogue.Animation = {}
