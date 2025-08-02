@@ -159,7 +159,13 @@ local burial = Biome.Feature.site(
   "items/burial.png",
   Biomes.meadows,
   function(self, hex) --weigh
-    if hex.height < 0 then
+    local local_burials = count(
+      filter(
+        function(h) return h.feature and h.feature.name == "burial" end,
+        hex:in_circle(10)
+      )
+    )
+    if local_burials > 0 or hex.height < 0 then
       return { weight = 0, feat = self }
     else
       local dist = hex:distance(Biome.Feature.center)
