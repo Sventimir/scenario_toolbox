@@ -135,8 +135,7 @@ function Gen:initial_spawn(biome, side)
 
   local function it()
     while #spawns > 0 and available_hexes.size > 0 do
-      local hex = available_hexes:random()
-      available_hexes:remove(hex)
+      local hex = available_hexes:pop_random()
       available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
       self.units:add(hex)
       return spawns[mathx.random(#spawns)]:wml(hex, side.side)

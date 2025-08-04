@@ -4,9 +4,9 @@ Map.__index = Map
 function Map:new(width, height, terrain)
   local m = setmetatable({ width = width, height = height, default_terrain = terrain }, self)
 
-  for y = 0, height + 1 do
+  for y = 0, height do
     local row = {}
-    for x = 0, width + 1 do
+    for x = 0, width do
       row[x] = self.Hex:new(m, x, y, terrain)
     end
     m[y] = row
@@ -21,13 +21,13 @@ end
 
 function Map:iter()
   local function it(state)
-    if state.x > self.width then
+    if state.x >= self.width then
       state.x = 0
       state.y = state.y + 1
     else
       state.x = state.x + 1
     end
-    if state.y > self.height + 1 then
+    if state.y > self.height then
       return nil
     else
       return self[state.y][state.x]
@@ -39,14 +39,14 @@ end
 function Map:as_map_data()
   local map = ""
 
-  for y = 0, self.height + 1 do
+  for y = 0, self.height do
     local row = self[y]
-    for x = 0, self.width + 1 do
+    for x = 0, self.width do
       local node = row[x]
       if node.starting_player then
         map = map .. node.starting_player .. " "
       end
-      if x < self.width + 1 then
+      if x < self.width then
           map = map .. node.terrain .. ", "
       else
         map = map .. node.terrain .. "\n"
@@ -59,7 +59,7 @@ end
 
 function Map:print_hexes()
   io.write(" ")
-  for x = 0, self.width + 1 do
+  for x = 0, self.width do
     if x % 2 == 1 then
         io.write(self[0][x]:show())
       elseif x <= self.width then
@@ -68,7 +68,7 @@ function Map:print_hexes()
   end
   io.write("\n")
 
-  for y = 0, 2 * (self.height + 1) do
+  for y = 0, 2 * self.height do
     if y % 2 == 0 then
       io.write("_/")
     else
