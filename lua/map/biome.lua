@@ -58,12 +58,6 @@ function Biome:add_feat(feat)
   self.features:add(feat)
 end
 
-function Biome:from_wml(spec)
-  local biome = Biome:new()
-
-  return biome
-end
-
 Biome.Feature = {}
 Biome.Feature.__index = Biome.Feature
 

@@ -122,7 +122,7 @@ wesnoth.game_events.add({
       local meadows = wesnoth.sides.find({ formula = "wml_vars.biome = 'meadows'" })[1]
       local origin = wml.get_child(meadows.variables.sites, "origin")
       local heroes = wesnoth.units.find({ side = "1,2", canrecruit = true })
-      local dialogue = OpeningDialogue(origin, heroes[1], heroes[2])
+      local dialogue = OpeningDialogue(origin, heroes[1], heroes[2] or heroes[1])
       dialogue:play()
     end
 })

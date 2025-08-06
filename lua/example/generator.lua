@@ -2,9 +2,9 @@ Vec = require("scenario_toolbox/lua/map/cubic_vector")
 CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
 Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
-Biome = require("scenario_toolbox/lua/map/biome")
+Biome = require("scenario_toolbox/lua/example/biome")
 Spawn = require("scenario_toolbox/lua/units/spawn")
-Biomes = require("scenario_toolbox/lua/example/biomes")
+Overlay = require("scenario_toolbox/lua/map/overlay")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
 
 
@@ -14,6 +14,7 @@ end
 
 Gen = {
   side_color = { "red", "blue", "purple" },
+  biomes = {},
   biome_centers = {},
 }
 
@@ -26,7 +27,7 @@ end
 
 function Gen:border_height(hex)
   hex.height = - mathx.min(2, mathx.floor(mathx.random(1, 6) / 2))
-  Biomes.ocean:add_hex(hex)
+  self.biomes.ocean:add_hex(hex)
 end
 
 function Gen:fjord_height(hex)
@@ -55,7 +56,7 @@ end
 function Gen:height_map()
   self.center = self.map:get(self.map.height / 2, self.map.width / 2)
   self.center.height = 0
-  self.center.terrain = self.center.biome:terrain(self.center)
+  self.center.terrain = self.center.biome.terrain[self.center.height]
 
   local interior_size = (self.map.width + self.map.height) / 10
   local hexes = Hex.Set:new(self.map:iter())
@@ -70,7 +71,7 @@ function Gen:height_map()
       self:border_height(hex)
     end
     if hex.height < -1 then
-      Biomes.ocean:add_hex(hex)
+      self.biomes.ocean:add_hex(hex)
     else
       hex.biome:add_hex(hex)
     end
@@ -86,7 +87,7 @@ function Gen:gen_biome_centers()
       self.map:iter()
     )
   )
-  local biomes = cycle(Biomes)
+  local biomes = cycle(self.biomes)
   while hexes.size > 0 do
     local biome = biomes()
     local hex = hexes:pop_random()
@@ -106,13 +107,13 @@ function Gen:expand_biomes()
         center:circle(r)
       )
       for hex in potential_hexes do
-        local valid_neighbours = as_table(
+        local valid_neighbours = count(
           filter(
             function(h) return center.biome:belongs(h) end,
             hex:circle(1)
           )
         )
-        if hex:distance(self.center) > 3 and mathx.random(0, r) < 2 * #valid_neighbours then
+        if hex:distance(self.center) > 3 and mathx.random(0, r) < 2 * valid_neighbours then
           table.insert(new_hexes, hex)
           center.biome:add_hex(hex)
         end
@@ -168,10 +169,14 @@ function Gen:make(cfg)
     table.insert(s, wml.tag.side(side))
   end
 
-  for i, biome in zip(drop(cfg.player_count, arith.nats()), iter(Biomes)) do
+  local i = cfg.player_count
+  for biome_wml in wml.child_range(cfg, "biome") do
+    biome = Biome:new(biome_wml)
+    self.biomes[biome.name] = biome
+    table.insert(self.biomes, biome)
     boss = {
         side = i,
-        color = biome.colour,
+        color = biome.color,
         faction = "Custom",
         controller = "ai",
         allow_player = false,
@@ -187,29 +192,29 @@ function Gen:make(cfg)
     local vars = { biome = biome.name, wml.tag.sites({}) }
     table.insert(boss, wml.tag.variables(vars))
     table.insert(s, wml.tag.side(boss))
+    i = i + 1
   end
  
-  self.map = Map:new(cfg.width, cfg.height, Biomes.meadows)
+  self.map = Map:new(cfg.width, cfg.height, self.biomes.meadows)
 
   self:height_map()
   self:gen_biome_centers()
   self:expand_biomes()
 
-  Biome.Feature.center = self.center
-  self.center.feature = Biomes.meadows.features:find("origin")
-  self.center.feature:apply(self.center, s)
+  local hexes = Hex.Set:new(self.map:iter())
+  -- self.center.feature = Biomes.meadows.features:find("origin")
+  -- self.center.feature:apply(self.center, s)
 
   local camp = Hex.Set:new(self.center:circle(3)):pop_random()
-  camp.feature = Biomes.meadows.features:find("castle")
-  camp.feature:apply(camp, s)
+  local ov = any(Predicate:has("name", "castle"), iter(self.biomes.meadows.overlay))
+  ov:apply(camp)
+  hexes:remove(camp)
 
-  local hexes = Hex.Set:new(self.map:iter())
   while hexes.size > 0 do
     local hex = hexes:pop_random()
-    if hex.biome then
-      f = hex.biome.features:assign(hex)
-      if f then f:apply(hex, s) end
-    end
+    hex.terrain = hex.biome.terrain[hex.height]
+    ov = Overlay.select(hex.biome.overlay, hex)
+    if ov then ov:apply(hex) end
   end
 
   self.units = Hex.Set:new()
@@ -225,16 +230,16 @@ function Gen:make(cfg)
 
   s.map_data = self.map:as_map_data()
 
-  for side in drop(cfg.player_count, wml.child_range(s, "side")) do
-    local vars = wml.get_child(side, "variables")
-    local biome = Biomes[vars.biome]
-    for u in self:initial_spawn(biome, boss) do
-      table.insert(side, u)
-    end
-  end
+  -- for side in drop(cfg.player_count, wml.child_range(s, "side")) do
+  --   local vars = wml.get_child(side, "variables")
+  --   local biome = self.biomes[vars.biome]
+  --   for u in self:initial_spawn(biome, boss) do
+  --     table.insert(side, u)
+  --   end
+  -- end
 
   local schedule = wml.child_array(s, "time")
-  for biome in iter(Biomes) do
+  for biome in iter(self.biomes) do
     table.insert(s, wml.tag.time_area(biome:time_area(iter(schedule))))
   end
 

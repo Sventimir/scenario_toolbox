@@ -9,6 +9,7 @@ function Hex:new(map, x, y, biome)
       x = x,
       y = y,
       height = nil,
+      terrain = ""
   }
   self.__index = self
   if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
@@ -25,6 +26,7 @@ function Hex:from_wesnoth(hex)
 
   hex.equals = Hex.equals
   hex.circle = Hex.circle
+  hex.in_circle = Hex.in_circle
   hex.as_vec = Hex.as_vec
   hex.distance = Hex.distance
   hex.__tostring = Hex.__tostring
@@ -79,6 +81,22 @@ end
 function Hex:at_night()
   local schedule = wesnoth.schedule.get_time_of_day(self)
   return schedule.lawful_bonus < 0
+end
+
+function Hex:has_forest()
+  return string.find(self.terrain, "%^F")
+end
+
+function Hex:has_village()
+  return string.find(self.terrain, "%^V")
+end
+
+function Hex:is_keep()
+  return string.find(self.terrain, "^K")
+end
+
+function Hex:is_castle()
+  return string.find(self.terrain, "^C")
 end
 
 Hex.Set = {}

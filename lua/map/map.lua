@@ -57,39 +57,6 @@ function Map:as_map_data()
   return map
 end
 
-function Map:print_hexes()
-  io.write(" ")
-  for x = 0, self.width do
-    if x % 2 == 1 then
-        io.write(self[0][x]:show())
-      elseif x <= self.width then
-        io.write("\\_/")
-    end
-  end
-  io.write("\n")
-
-  for y = 0, 2 * self.height do
-    if y % 2 == 0 then
-      io.write("_/")
-    else
-      io.write(" ")
-    end
-    for x = 0, self.width + 1 do
-      if x % 2 == y % 2 then
-        io.write(self[mathx.ceil(y / 2)][x]:show())
-      elseif x <= self.width then
-        io.write("\\_/")
-      end
-    end
-    if y % 2 == 1 then
-      io.write("\\_")
-    else
-      io.write("\\_/")
-    end
-    io.write("\n")
-  end
-end
-
 function Map:labels_wml()
   return map(
     function(hex)

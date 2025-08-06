@@ -53,11 +53,11 @@ function Spawn:wolf_pack(unit_type, min_size, max_size)
    this.max_size = max_size or 6
 
    function this:placement(hex, side)
-     local hexes = as_table(filter(Spawn.valid_location, chain(iter({ hex }), hex:circle(1))))
+     local hexes = Hex.Set:new(filter(Spawn.valid_location, hex:in_circle(1)))
      return repeatedly(
        function()
-         if #hexes > 0 then
-           local h = table.remove(hexes, mathx.random(#hexes))
+         if hexes.size > 0 then
+           local h = hexes:pop_random()
            return { type = self.unit_type, side = side, x = h.x, y = h.y }
          else
            return nil

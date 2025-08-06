@@ -1,9 +1,18 @@
-package.path = package.path .. ";/home/sven/code/wesnoth/?.lua"
-require("scenario_toolbox/lua/lib/core")
-Hex = require("scenario_toolbox/lua/map/hex")
+goblin = { sp = 42 }
 
-s = Hex.Set:new(iter({
-                { x = 2, y = 4, z = 3 },
-                { x = 3, y = 7, z = 32 },
-                { x = 2, y = 3, z = 2 }
-}))
+function goblin:new(x, y)
+  local g = { x = x, y = y }
+  return setmetatable(g, { __index = self })
+end
+
+function goblin:draw()
+  print(string.format("goblin(%i) @ (%i, %i)", self.sp, self.x, self.y ))
+end
+
+hobgoblin = setmetatable({}, { __index = goblin })
+
+function hobgoblin:hob()
+  print("hob! hob!")
+end
+
+hg = hobgoblin:new(3, 4)
