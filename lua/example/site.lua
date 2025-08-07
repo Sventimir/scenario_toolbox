@@ -21,10 +21,10 @@ function Site:wml(x, y)
   return { wml.tag.item(spec) }
 end
 
-Site.Origin = { name = "origin", image = "items/altar.png" }
-setmetatable(Site.Origin, { __index = Site })
+Site.origin = { name = "origin", image = "items/altar.png" }
+setmetatable(Site.origin, { __index = Site })
 
-function Site.Origin:new()
+function Site.origin:new()
   local s = Site.new(self, "origin", "items/altar.png")
   s.variables.title = "Ołtarz Baziola"
   s.variables.description = "Na tym ołtarzu Praojciec Baziol przyjmuje ofiary z pokonanych przedwiecznych. "
@@ -32,7 +32,7 @@ function Site.Origin:new()
   return s
 end
 
-function Site.Origin:wml(x, y)
+function Site.origin:wml(x, y)
   local location = { x = y and x or x.x, y = y or x.y }
   local spec = Site.wml(self, location)
   local lua_code = [[
@@ -46,6 +46,31 @@ function Site.Origin:wml(x, y)
   })
   table.insert(spec, dialogue)
   return spec
+end
+
+Site.altar = { name = "altar", image = "items/altar-evil.png"}
+setmetatable(Site.altar, { __index = Site })
+
+function Site.altar:new(spec)
+  local alt = Site.new(self)
+  s.variables.title = "Ołtarz Przedwiecznego"
+  s.variables.description = spec.description
+
+  local dist = wml.get_child(spec, "distance_from_origin")
+  alt.mean_dist = dist.mean
+  alt.dist_std_dev = dist.standard_deviation
+  return alt
+end
+
+-- normal distribution
+function Site.Altar:origin_distance_distribution(x)
+  local factor = 1 / sqrt(2 * mathx.pi * (self.dist_std_dev ^ 2))
+  local exponent = ((x - self.mean_dist) ^ 2) / (2 * (self.dist_std_dev ^ 2))
+  return factor * (mathx.exp(1) ^ exponent)
+end
+
+function Site.Altar:place(origin, available_hexes)
+  
 end
 
 return Site
