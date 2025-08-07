@@ -6,9 +6,12 @@ local baziol = wesnoth.units.create({
     name = "Baziol",
 })
 
-local function Opening(origin, fst, snd) 
+local function Opening(origin)
   local d = Dialogue:new()
 
+  local heroes = wesnoth.units.find({ side = "1,2", canrecruit = true })
+  local fst = heroes[1]
+  local snd = heroes[2] or heroes[1]
   local animation = as_table(
     map(
       function(i) return string.format("halo/holy/light-beam-%i.png", i) end,

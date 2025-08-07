@@ -1,11 +1,12 @@
-Vec = require("scenario_toolbox/lua/map/cubic_vector")
+Biome = require("scenario_toolbox/lua/example/biome")
 CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
 Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
-Biome = require("scenario_toolbox/lua/example/biome")
-Spawn = require("scenario_toolbox/lua/units/spawn")
 Overlay = require("scenario_toolbox/lua/map/overlay")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
+Site = require("scenario_toolbox/lua/example/site")
+Spawn = require("scenario_toolbox/lua/units/spawn")
+Vec = require("scenario_toolbox/lua/map/cubic_vector")
 
 
 local function hex_height(hex)
@@ -202,9 +203,6 @@ function Gen:make(cfg)
   self:expand_biomes()
 
   local hexes = Hex.Set:new(self.map:iter())
-  -- self.center.feature = Biomes.meadows.features:find("origin")
-  -- self.center.feature:apply(self.center, s)
-
   local camp = Hex.Set:new(self.center:circle(3)):pop_random()
   local ov = any(Predicate:has("name", "castle"), iter(self.biomes.meadows.overlay))
   ov:apply(camp)
@@ -216,6 +214,9 @@ function Gen:make(cfg)
     ov = Overlay.select(hex.biome.overlay, hex)
     if ov then ov:apply(hex) end
   end
+
+  local origin = Site.Origin:new()
+  s = wml.merge(s, origin:wml(self.center), "append")
 
   self.units = Hex.Set:new()
 
