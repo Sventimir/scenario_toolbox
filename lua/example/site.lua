@@ -1,7 +1,7 @@
 local Site = {}
 
-function Site:new(name, image)
-  return setmetatable({ name = name, image = image, variables = {} }, { __index = self })
+function Site:new()
+  return setmetatable({ variables = {} }, { __index = self })
 end
 
 function Site:wml(x, y)
@@ -21,7 +21,8 @@ function Site:wml(x, y)
   return { wml.tag.item(spec) }
 end
 
-Site.Origin = setmetatable({}, { __index = Site })
+Site.Origin = { name = "origin", image = "items/altar.png" }
+setmetatable(Site.Origin, { __index = Site })
 
 function Site.Origin:new()
   local s = Site.new(self, "origin", "items/altar.png")

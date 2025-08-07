@@ -202,6 +202,7 @@ function Gen:make(cfg)
   self:gen_biome_centers()
   self:expand_biomes()
 
+  self.sites = Hex.Set:new()
   local hexes = Hex.Set:new(self.map:iter())
   local camp = Hex.Set:new(self.center:circle(3)):pop_random()
   local ov = any(Predicate:has("name", "castle"), iter(self.biomes.meadows.overlay))
@@ -217,14 +218,14 @@ function Gen:make(cfg)
 
   local origin = Site.Origin:new()
   s = wml.merge(s, origin:wml(self.center), "append")
+  self.center.site = origin.name
+  self.sites:add(self.center)
 
   self.units = Hex.Set:new()
 
-  local starting_positions = as_table(
-    filter(function(h) return h.biome end, self.center:circle(1))
-  )
+  local starting_positions = Hex.Set:new(self.center:circle(1))
   for i = 1, cfg.player_count do
-    local hex = table.remove(starting_positions, mathx.random(#starting_positions))
+    local hex = starting_positions:pop_random()
     hex.terrain = string.format("%i %s", i, hex.terrain)
     self.units:add(hex)
   end
@@ -244,7 +245,18 @@ function Gen:make(cfg)
     table.insert(s, wml.tag.time_area(biome:time_area(iter(schedule))))
   end
 
-  table.insert(s, wml.tag.variables({ active = "meadows" }))
+  local vars = as_table(
+    map(
+      function(h)
+        return wml.tag.sites({
+            x = h.x, y = h.y, type = h.site,
+        })
+      end,
+      self.sites:iter()
+    )
+  )
+  vars.active = "meadows"
+  table.insert(s, wml.tag.variables(vars))
 
   local preload = {
     name = "preload",

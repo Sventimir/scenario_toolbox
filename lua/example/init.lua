@@ -142,8 +142,7 @@ wesnoth.game_events.add({
             description = "Zbadaj to miejsce",
             image = "images/misc/eye.png",
             wml.tag.filter_location({
-                x = sites_x,
-                y = sites_y,
+                find_in="sites",
                 wml.tag["and"]({
                     wml.tag.filter_adjacent_location({
                         wml.tag.filter({ side = "$side_number" })
@@ -162,13 +161,16 @@ wesnoth.game_events.add_menu(
     function()
       local x = wml.variables.x1
       local y = wml.variables.y1
+      local item = wesnoth.interface.get_items(x, y)[1]
       local speaker = wesnoth.units.find({
           side = "$side_number",
           wml.tag.filter_location({ x = x, y = y, radius = 1 })
       })[1]
-      local site = sites:get(x, y)
-      local feature = Biomes[site.biome].features:find(site.name)
-      gui.show_narration(feature:description(speaker.portrait))
+      gui.show_narration({
+          portrait = speaker.portrait,
+          title = item.variables.title,
+          message = item.variables.description,
+      })
     end
 )
 
