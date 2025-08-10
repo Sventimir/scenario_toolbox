@@ -149,6 +149,7 @@ end
 
 function Gen:make(cfg)
   local s = wml.get_child(cfg, "scenario")
+  Site:init(cfg)
   for i = 1, cfg.player_count do
     local side = {
         side = i,
@@ -216,10 +217,28 @@ function Gen:make(cfg)
     if ov then ov:apply(hex) end
   end
 
-  local origin = Site.Origin:new()
+  hexes = Hex.Set:new(
+    filter(
+      function(h) return not (h:has_village() or h:is_border()) end,
+      self.map:iter()
+    )
+  )
+  local origin = Site.origin:new()
   s = wml.merge(s, origin:wml(self.center), "append")
   self.center.site = origin.name
   self.sites:add(self.center)
+  hexes:remove(self.center)
+
+  for biome in iter(self.biomes) do
+    for site in iter(biome.sites) do
+      local site_wml = site:place(self.center, hexes:intersect(biome.hexes))
+      s = wml.merge(s, site_wml, "append")
+      for item in wml.child_range(site_wml, "item") do
+        hexes:remove(item)
+        self.sites:add(self.map:get(item.x, item.y))
+      end
+    end
+  end
 
   self.units = Hex.Set:new()
 

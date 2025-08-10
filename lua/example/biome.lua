@@ -17,11 +17,16 @@ function Biome:new(spec)
       [2]  = terrain.mountains,
     },
     overlay = {},
+    sites = {},
     hexes = Hex.Set:new(),
   }
 
   for ov in wml.child_range(spec, "overlay") do
     table.insert(biome.overlay, Overlay[ov.type]:new(ov))
+  end
+
+  for site in wml.child_range(spec, "site") do
+    table.insert(biome.sites, Site[site.type]:new(site))
   end
 
   return setmetatable(biome, self)

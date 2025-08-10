@@ -83,6 +83,11 @@ function Hex:at_night()
   return schedule.lawful_bonus < 0
 end
 
+function Hex:is_border()
+  return self.x <= 0 or self.x >= self.map.width
+    or self.y <= 0 or self.y >= self.map.height
+end
+
 function Hex:has_forest()
   return string.find(self.terrain, "%^F")
 end
@@ -206,6 +211,10 @@ end
 
 function Hex.Set:empty()
   return self.size == 0
+end
+
+function Hex.Set:filter(predicate)
+  return Hex.Set:new(filter(predicate, self:iter()))
 end
 
 function Hex.Set:intersect(other)
