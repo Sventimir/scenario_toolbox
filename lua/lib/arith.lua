@@ -35,6 +35,14 @@ function mod.signum(x)
   end
 end
 
+function mod.trunc(x)
+  if x > 0 then
+    return x - mathx.floor(x)
+  else
+    return x + mathx.ceil(x)
+  end
+end
+
 function mod.mean(it, state, ctrl)
   local total = 0
   local count = 0

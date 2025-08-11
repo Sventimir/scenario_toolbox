@@ -8,11 +8,6 @@ function Site:new()
   return setmetatable({ variables = {} }, { __index = self })
 end
 
-function Site:init(cfg)
-  self.Map.width = cfg.width
-  self.Map.height = cfg.height
-end
-
 function Site:wml(x, y)
   local spec = {
     name = self.name,
@@ -57,7 +52,10 @@ function Site.origin:wml(x, y)
   return spec
 end
 
-Site.altar = { name = "altar", image = "items/altar-evil.png"}
+Site.altar = {
+  name = "altar",
+  image = "items/altar-evil.png",
+}
 setmetatable(Site.altar, { __index = Site })
 
 function Site.altar:new(spec)
@@ -66,43 +64,32 @@ function Site.altar:new(spec)
   alt.variables.description = spec.description
 
   local dist = wml.get_child(spec, "distance_from_origin")
-  alt.mean_dist = dist.mean
-  alt.dist_std_dev = dist.standard_deviation
-  alt.max_radius = mathx.min(self.Map.width, self.Map.height) - 3
+  alt.distance = Prob.Normal:new(dist.mean, dist.standard_deviation)
+  alt.min_dist = dist.minimum or 1
+  alt.max_dist = dist.maximum or mathx.huge
   return alt
 end
 
--- We want to generate the altar at a radius from origin, where the
--- radius is distributed normally over the island's surface.  We need
--- a cumulative normal distribution here as well as its inverse.  We
--- need the distribution itself to convert minimum and maximum radius
--- to their probabilities, to obtain the range from which we need to
--- sample a random value. Then we use the inverse function to
--- transform the random value back into a radius.
--- This is a heavy calculation though, so it might be easier to use a
--- quadratic function instead of normal distribution, which for our
--- purpose should give a good enough approximation with far simpler
--- calculations. However, in that case, instead of a regular quadratic
--- function we need a cumulative variant of it, such that it is a
--- bijection (which regular quadratic function isn't).
-function Site.altar:origin_distance_distribution(x)
-  local factor = 1 / sqrt(2 * mathx.pi * (self.dist_std_dev ^ 2))
-  local exponent = ((x - self.mean_dist) ^ 2) / (2 * (self.dist_std_dev ^ 2))
-  return factor * (mathx.exp(1) ^ exponent)
-end
-
 function Site.altar:place(origin, available_hexes)
-  local r = Prob.Mock:sample(10, self.max_radius)
+  local r = self.distance:sample_int(self.min_dist, self.max_dist)
   local hexset = Hex.Set:new(origin:circle(r)):intersect(
     available_hexes:filter(function(h) return h.height >= 0 end)
   )
   local i = 0
-  while hexset:empty() and i < r do
+  while hexset:empty() and r + i <= self.max_dist and r - i >= self.min_dist do
     i = i + 1
     hexset = Hex.Set:new(chain(origin:circle(r + i), origin:circle(r - i)))
     hexset = hexset:intersect(available_hexes)
   end
+  if hexset:empty() then
+    error("No valid locations for altar!")
+  end
   return self:wml(hexset:random())
+end
+
+function Site:init(cfg)
+  self.Map.width = cfg.width
+  self.Map.height = cfg.height
 end
 
 return Site
