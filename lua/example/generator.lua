@@ -20,7 +20,7 @@ Gen = {
 }
 
 function Gen:mean_height_around(hex)
-  return arith.round(
+  return mathx.round(
     arith.mean(filter_map(hex_height, hex:circle(1)))
     or mathx.random(-2, 2)
   )
@@ -32,7 +32,7 @@ function Gen:border_height(hex)
 end
 
 function Gen:fjord_height(hex)
-  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
+  local mean = mathx.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
   local h = mean + mathx.random(-1, 1)
   if h >= 0 and mean <= 0 then
     h = h + mathx.random(0, 1)
@@ -41,8 +41,8 @@ function Gen:fjord_height(hex)
 end
 
 function Gen:interior_height(hex)
-  local mean = arith.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
-  local d = arith.round(mathx.random(-2, 2) / 2)
+  local mean = mathx.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
+  local d = mathx.round(mathx.random(-2, 2) / 2)
   if d > 0 then
     d = d + mathx.random(0, 1)
   end
