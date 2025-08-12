@@ -1,4 +1,5 @@
 require("scenario_toolbox/lua/lib/core")
+local Hex = require("scenario_toolbox/lua/map/hex")
 
 local Spawn = {}
 Spawn.__index = Spawn
@@ -14,16 +15,15 @@ else
   end
 end
 
-function Spawn:new(unit_type, extra)
-  local this = { unit_type = unit_type, extra = extra or {} }
-  return setmetatable(this, self)
+function Spawn:new(unit)
+  return setmetatable(unit, self)
 end
 
 function Spawn:placement(hex, side)
-  local u = { type = self.unit_type, side = side, x = hex.x, y = hex.y }
-  for k, v in pairs(self.extra) do
-    u[k] = v
-  end
+  local u = wml.clone(self)
+  u.x = hex.x
+  u.y = hex.y
+  if side then u.side = side end
   return iter({u})
 end
 
@@ -47,27 +47,43 @@ function Spawn:spawn(hex, side)
   return us
 end
 
-function Spawn:wolf_pack(unit_type, min_size, max_size)
-   local this = Spawn:new("Wolf")
-   this.min_size = min_size or 3
-   this.max_size = max_size or 6
+Spawn.wolf_pack = setmetatable({}, { __index = Spawn })
 
-   function this:placement(hex, side)
-     local hexes = Hex.Set:new(filter(Spawn.valid_location, hex:in_circle(1)))
-     return repeatedly(
-       function()
-         if hexes.size > 0 then
-           local h = hexes:pop_random()
-           return { type = self.unit_type, side = side, x = h.x, y = h.y }
-         else
-           return nil
-         end
-       end,
-       mathx.random(self.min_size, self.max_size)
-     )
-   end
+function Spawn.wolf_pack:new(spec)
+  local s = { min_size = spec.min_size, max_size = spec.max_size }
+  s.unit = wml.get_child(spec, "unit")
+  return setmetatable(s, { __index = self })
+end
 
-   return this
+function Spawn.wolf_pack:placement(hex, side)
+  local hexes = Hex.Set:new(filter(Spawn.valid_location, hex:in_circle(1)))
+  return repeatedly(
+    function()
+      if hexes.size > 0 then
+        local h = hexes:pop_random()
+        local u = wml.literal(self.unit)
+        u.x = hex.x
+        u.y = hex.y
+        if side then u.side = side end
+        return u
+      else
+        return nil
+      end
+    end,
+    mathx.random(self.min_size, self.max_size)
+  )
+end
+
+Spawn.family = setmetatable({}, { __index = Spawn })
+
+function Spawn.family:new(spec)
+  local s = {
+    min_offspring = spec.min_offspring,
+    max_offspring = spec.max_offspring,
+    parent = wml.get_child(spec, "parent"),
+    child = wml.get_child(spec, "child")
+  }
+  return setmetatable(s, { __index = self })
 end
 
 function Spawn:family(parent_type, child_type, min_size, max_size)
@@ -95,6 +111,15 @@ function Spawn:family(parent_type, child_type, min_size, max_size)
   end
 
   return this
+end
+
+if wesnoth.wml_actions then -- only at runtime
+  function wesnoth.wml_actions.spawn(spec)
+    local spawn_proto = spec.type and Spawn[spec.type] or Spawn
+    local spawn = spawn_proto:new(spec)
+    local hex = Hex:from_wesnoth(wesnoth.map.get(spec.x, spec.y))
+    spawn:spawn(hex, spec.side or wml.variables.current_side)
+  end
 end
 
 return Spawn

@@ -4,7 +4,7 @@ local Overlay = require("scenario_toolbox/lua/map/overlay")
 local Biome = {}
 Biome.__index = Biome
 
-function Biome:new(spec)
+function Biome:new(spec, side)
   local terrain = wml.get_child(spec, "terrain")
   local biome = {
     name = spec.name,
@@ -19,6 +19,7 @@ function Biome:new(spec)
     overlay = {},
     sites = {},
     hexes = Hex.Set:new(),
+    side = side,
   }
 
   for ov in wml.child_range(spec, "overlay") do
@@ -26,7 +27,7 @@ function Biome:new(spec)
   end
 
   for site in wml.child_range(spec, "site") do
-    table.insert(biome.sites, Site[site.type]:new(site))
+    table.insert(biome.sites, Site[site.type]:new(site, biome))
   end
 
   return setmetatable(biome, self)

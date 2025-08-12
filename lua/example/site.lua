@@ -1,5 +1,6 @@
 Hex = require("scenario_toolbox/lua/map/hex")
 Prob = require("scenario_toolbox/lua/lib/probability")
+Spawn = require("scenario_toolbox/lua/units/spawn")
 
 local Site = {}
 Site.Map = {}
@@ -55,11 +56,15 @@ end
 Site.altar = {
   name = "altar",
   image = "items/altar-evil.png",
+  radius = Prob.Normal:new()
 }
 setmetatable(Site.altar, { __index = Site })
 
-function Site.altar:new(spec)
+Site.altar.radius.lerp_strict = true
+
+function Site.altar:new(spec, biome)
   local alt = Site.new(self)
+  alt.biome = biome
   alt.variables.title = "Ołtarz Przedwiecznego"
   alt.variables.description = spec.description
 
@@ -67,7 +72,24 @@ function Site.altar:new(spec)
   alt.distance = Prob.Normal:new(dist.mean, dist.standard_deviation)
   alt.min_dist = dist.minimum or 1
   alt.max_dist = dist.maximum or mathx.huge
+  alt.spawn = wml.get_child(spec, "spawn")
   return alt
+end
+
+function Site.altar:wml(x, y)
+  local spec = Site.wml(self, x, y)
+  local spawn_event = {
+      name = string.format("side %i turn", self.biome.side.side),
+      first_time_only = false,
+      id = string.format("%s-altar-spawn", self.biome.name),
+  }
+  local spawn = wml.clone(self.spawn)
+  spawn.x = y and x or x.x
+  spawn.y = y or x.y
+  spawn.side = self.biome.side.side
+  table.insert(spawn_event, wml.tag.spawn(spawn))
+  table.insert(spec, wml.tag.event(spawn_event))
+  return spec
 end
 
 function Site.altar:place(origin, available_hexes)
@@ -87,9 +109,8 @@ function Site.altar:place(origin, available_hexes)
   return self:wml(hexset:random())
 end
 
-function Site:init(cfg)
-  self.Map.width = cfg.width
-  self.Map.height = cfg.height
+function Site:init(map)
+  self.map = map
 end
 
 return Site

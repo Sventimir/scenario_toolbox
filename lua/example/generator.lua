@@ -149,7 +149,6 @@ end
 
 function Gen:make(cfg)
   local s = wml.get_child(cfg, "scenario")
-  Site:init(cfg)
   for i = 1, cfg.player_count do
     local side = {
         side = i,
@@ -173,12 +172,8 @@ function Gen:make(cfg)
 
   local i = cfg.player_count
   for biome_wml in wml.child_range(cfg, "biome") do
-    biome = Biome:new(biome_wml)
-    self.biomes[biome.name] = biome
-    table.insert(self.biomes, biome)
     boss = {
         side = i,
-        color = biome.color,
         faction = "Custom",
         controller = "ai",
         allow_player = false,
@@ -188,9 +183,13 @@ function Gen:make(cfg)
         gold = 0,
         hidden = true,
         income = 0,
-        team_name = biome.name,
         defeat_condition = "never",
     }
+    biome = Biome:new(biome_wml, boss)
+    self.biomes[biome.name] = biome
+    table.insert(self.biomes, biome)
+    boss.color = biome.color
+    boss.team_name = biome.name
     local vars = { biome = biome.name, wml.tag.sites({}) }
     table.insert(boss, wml.tag.variables(vars))
     table.insert(s, wml.tag.side(boss))
@@ -198,6 +197,7 @@ function Gen:make(cfg)
   end
  
   self.map = Map:new(cfg.width, cfg.height, self.biomes.meadows)
+  Site:init(self.map)
 
   self:height_map()
   self:gen_biome_centers()
@@ -234,8 +234,10 @@ function Gen:make(cfg)
       local site_wml = site:place(self.center, hexes:intersect(biome.hexes))
       s = wml.merge(s, site_wml, "append")
       for item in wml.child_range(site_wml, "item") do
+        local hex = self.map:get(item.x, item.y)
         hexes:remove(item)
-        self.sites:add(self.map:get(item.x, item.y))
+        hex.site = site.name
+        self.sites:add(hex)
       end
     end
   end
