@@ -46,12 +46,20 @@ function Inventory.filter.has_item(name)
   })
 end
 
-function wesnoth.wml_actions.inventory(conf)
-  local f = wml.get_child(conf, "filter")
-  for u in iter(wesnoth.units.find_on_map(f)) do
-    local inv = Inventory.get(u)
-    inv[conf.action](inv, conf.item, conf.quantity)
-    inv:save()
+Inventory.formula = {}
+
+function Inventory.formula.has_item(name, quantity)
+  return string.format("wml_vars.inventory[0].%s >= %i", name, quantity or 1)
+end
+
+if wesnoth.wml_actions then -- only available at runtime
+  function wesnoth.wml_actions.inventory(conf)
+    local f = wml.get_child(conf, "filter")
+    for u in iter(wesnoth.units.find_on_map(f)) do
+      local inv = Inventory.get(u)
+      inv[conf.action](inv, conf.item, conf.quantity)
+      inv:save()
+    end
   end
 end
 

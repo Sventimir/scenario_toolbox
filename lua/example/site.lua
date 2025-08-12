@@ -1,4 +1,5 @@
 Hex = require("scenario_toolbox/lua/map/hex")
+Inventory = require("scenario_toolbox/lua/units/inventory")
 Prob = require("scenario_toolbox/lua/lib/probability")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
@@ -73,20 +74,61 @@ function Site.altar:new(spec, biome)
   alt.min_dist = dist.minimum or 1
   alt.max_dist = dist.maximum or mathx.huge
   alt.spawn = wml.get_child(spec, "spawn")
+  alt.boss = wml.get_child(spec, "boss")
+  alt.boss_id = string.format("%s-boss", alt.biome.name)
   return alt
 end
 
 function Site.altar:wml(x, y)
   local spec = Site.wml(self, x, y)
-  local spawn_event = {
+  local location = wesnoth.map.read_location(x, y)
+  if self.spawn then
+    local spawn_event = {
       name = string.format("side %i turn", self.biome.side.side),
       first_time_only = false,
       id = string.format("%s-altar-spawn", self.biome.name),
-  }
-  local spawn = wml.merge(wml.clone(self.spawn), wesnoth.map.read_location(x, y), "append")
-  spawn.side = self.biome.side.side
-  table.insert(spawn_event, wml.tag.spawn(spawn))
-  table.insert(spec, wml.tag.event(spawn_event))
+    }
+    local filter = {
+        wml.tag.variable({
+            name = "active",
+            equals = self.biome.name,
+        }),
+    }
+    if self.boss then
+      local absent_boss = { wml.tag.have_unit({ id = self.boss_id }) }
+      table.insert(filter, wml.tag["not"](absent_boss))
+    end
+    local spawn = wml.merge(wml.clone(self.spawn), location, "append")
+    spawn.side = self.biome.side.side
+    table.insert(spawn_event, wml.tag.filter_condition(filter))
+    table.insert(spawn_event, wml.tag.spawn(spawn))
+    table.insert(spec, wml.tag.event(spawn_event))
+  end
+  if self.boss then
+    local boss_menu = {
+      id = string.format("%s-summon-menu", self.biome.name),
+      description = "Przywołanie Przedwiecznego",
+    }
+    local filter = wml.clone(location)
+    local unit_filter = { side = "$side_number" }
+    local requirement = wml.get_child(self.boss, "requirement")
+    if requirement then
+      unit_filter.formula = Inventory.formula.has_item(
+        requirement.item,
+        requirement.quantity
+      )
+    end
+    table.insert(filter, wml.tag["and"]({
+      wml.tag.filter_adjacent_location({ wml.tag.filter(unit_filter)}),
+      wml.tag["or"]({ wml.tag.filter(unit_filter )}),
+    }))
+    table.insert(boss_menu, wml.tag.filter_location(filter))
+    local event = {
+      name = "prestart",
+      wml.tag.set_menu_item(boss_menu)
+    }
+    table.insert(spec, wml.tag.event(event))
+  end
   return spec
 end
 
@@ -107,7 +149,7 @@ function Site.altar:place(origin, available_hexes)
   return self:wml(hexset:random())
 end
 
-function Site:init(map)
+function Site:init(map, cfg)
   self.map = map
 end
 

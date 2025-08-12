@@ -197,7 +197,7 @@ function Gen:make(cfg)
   end
  
   self.map = Map:new(cfg.width, cfg.height, self.biomes.meadows)
-  Site:init(self.map)
+  Site:init(self.map, cfg)
 
   self:height_map()
   self:gen_biome_centers()
