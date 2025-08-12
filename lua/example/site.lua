@@ -23,7 +23,7 @@ function Site:wml(x, y)
     spec.x = x.x
     spec.y = x.y
   end
-  return { wml.tag.item(spec) }
+  return { wml.tag.item(wml.merge(spec, wesnoth.map.read_location(x, y), "append")) }
 end
 
 Site.origin = { name = "origin", image = "items/altar.png" }
@@ -38,7 +38,7 @@ function Site.origin:new()
 end
 
 function Site.origin:wml(x, y)
-  local location = { x = y and x or x.x, y = y or x.y }
+  local location = wesnoth.map.read_location(x, y)
   local spec = Site.wml(self, location)
   local lua_code = [[
     local opening_dialogue = require("scenario_toolbox/lua/example/dialogues/opening")
@@ -83,9 +83,7 @@ function Site.altar:wml(x, y)
       first_time_only = false,
       id = string.format("%s-altar-spawn", self.biome.name),
   }
-  local spawn = wml.clone(self.spawn)
-  spawn.x = y and x or x.x
-  spawn.y = y or x.y
+  local spawn = wml.merge(wml.clone(self.spawn), wesnoth.map.read_location(x, y), "append")
   spawn.side = self.biome.side.side
   table.insert(spawn_event, wml.tag.spawn(spawn))
   table.insert(spec, wml.tag.event(spawn_event))
