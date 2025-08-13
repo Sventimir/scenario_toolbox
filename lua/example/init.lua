@@ -93,28 +93,10 @@ wesnoth.game_events.add({
     content = wml.merge(micro_ai, objectives)
 })
 
--- local altars = filter_map(get("sites", "altar", 1), iter(Biomes))
-local sites_x, sites_y = sites:as_area()
 wesnoth.game_events.add({
     name = "prestart",
     id = "setup_summons_menu",
     content = {
-        -- wml.tag.set_menu_item({
-        --           id = "summon_menu",
-        --           description = "Przywołanie Przedwiecznego",
-        --           wml.tag.filter_location({
-        --               x = str.join(map(get("x"), altars), ","),
-        --               y = str.join(map(get("y"), altars), ","),
-        --               wml.tag["and"]({
-        --                         wml.tag.filter_adjacent_location({
-        --                             wml.tag.filter({ Inventory.filter.has_item("bones") })
-        --                         }),
-        --                         wml.tag["or"]({
-        --                             wml.tag.filter({ Inventory.filter.has_item("bones") })
-        --                         })
-        --               })
-        --           }),
-        -- }),
         wml.tag.set_menu_item({
             id = "description_menu",
             description = "Zbadaj to miejsce",
@@ -151,46 +133,6 @@ wesnoth.game_events.add_menu(
       })
     end
 )
-
--- wesnoth.game_events.add_menu(
---   "summon_menu",
---   function()
---     local hex = Hex:from_wesnoth(wesnoth.map.get(wml.variables.x1, wml.variables.y1))
---     local side = filter(
---       function(s)
---         local altar = wml.get_child(s.variables.sites, "altar")
---         return hex:equals(altar)
---       end,
---       iter(enemies)
---     )()
---     local u = wesnoth.units.find({ Inventory.filter.has_item("bones") })[1]
---     Inventory.consume(u, "bones", 1)
---     local altar = wml.get_child(side.variables.sites, "altar")
---     local spawn = Biomes[side.variables.biome].spawn.boss
---     local x, y = wesnoth.paths.find_vacant_hex(altar.x, altar.y, { type = spawn.unit_type })
---     local hex = { x = x, y = y }
---     wesnoth.map.place_area({
---         id = "boss-fight",
---         x = altar.x,
---         y = altar.y,
---         radius = 3,
---         wml.tag.time({
---             name = "Aura Przedwiecznej Shazzy",
---             description = "Wokół Przedwiecznej Istoty panuje ciemność i burza z piorunami.",
---             image = "misc/time-schedules/schedule-midnight.png",
---             lawful_bonus = -25,
---             red = -75,
---             green = -45,
---             blue = -13,
---         })
---     })
---     local avatar = spawn:spawn(hex, side.side)
---     avatar[1].role = "boss"
---     local u2 = wesnoth.units.find({ side = "1,2", wml.tag["not"]({ x = u.x, y = u.y}) })[1]
---     local d = ShazzaDialogue(avatar, u, u2)
---     d:play()
---   end
--- )
 
 wesnoth.game_events.add({
     name = "die",

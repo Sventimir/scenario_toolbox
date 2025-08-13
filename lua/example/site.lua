@@ -82,6 +82,8 @@ end
 function Site.altar:wml(x, y)
   local spec = Site.wml(self, x, y)
   local location = wesnoth.map.read_location(x, y)
+  local neighbourhood = wml.clone(location)
+  neighbourhood.radius = 1
   if self.spawn then
     local spawn_event = {
       name = string.format("side %i turn", self.biome.side.side),
@@ -105,11 +107,6 @@ function Site.altar:wml(x, y)
     table.insert(spec, wml.tag.event(spawn_event))
   end
   if self.boss then
-    local boss_menu = {
-      id = string.format("%s-summon-menu", self.biome.name),
-      description = "Przywołanie Przedwiecznego",
-    }
-    local filter = wml.clone(location)
     local unit_filter = { side = "$side_number" }
     local requirement = wml.get_child(self.boss, "requirement")
     if requirement then
@@ -118,16 +115,56 @@ function Site.altar:wml(x, y)
         requirement.quantity
       )
     end
-    table.insert(filter, wml.tag["and"]({
-      wml.tag.filter_adjacent_location({ wml.tag.filter(unit_filter)}),
-      wml.tag["or"]({ wml.tag.filter(unit_filter )}),
-    }))
+    local boss_menu = {
+      id = string.format("%s-summon-menu", self.biome.name),
+      description = "Przywołanie Przedwiecznego",
+    }
+    local filter = {
+      x = location.x, y = location.y,
+      radius = 1,
+      wml.tag["and"]({
+          wml.tag.filter_adjacent_location({ wml.tag.filter(unit_filter) }),
+          wml.tag["or"]({ wml.tag.filter(unit_filter) })
+      }),
+    }
     table.insert(boss_menu, wml.tag.filter_location(filter))
-    local event = {
+    local spawn = wml.merge(self.boss, location, "append")
+    spawn.side = self.biome.side.side
+    local cmd = {
+      wml.tag.inventory({
+          wml.tag.filter(unit_filter),
+          action = "remove",
+          item = "bones",
+          quantity = 1,
+      }),
+      wml.tag.time_area({
+          x = "$x1", y = "$y1", radius = 3,
+          wml.tag.time({
+              name = "Aura Przedwiecznego",
+              description = "Wokół Przedwiecznej Istoty panuje ciemność i burza z piorunami.",
+              image = "misc/time-schedules/schedule-midnight.png",
+              lawful_bonus = -25,
+              red = -75,
+              green = -45,
+              blue = -13,
+          })
+      }),
+      wml.tag.spawn(spawn),
+      wml.tag.lua({
+          code = [[ local Dialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
+                    local us = wesnoth.units.find({ side = "1,2" })
+                    local avatar = wesnoth.units.find({ id = "meadows-boss" })
+                    local d = Dialogue(avatar[1], us[1], us[2])
+                    d:play()
+                 ]]
+      })
+    }
+    table.insert(boss_menu, wml.tag.command(cmd))
+    local prestart = {
       name = "prestart",
       wml.tag.set_menu_item(boss_menu)
     }
-    table.insert(spec, wml.tag.event(event))
+    table.insert(spec, wml.tag.event(prestart))
   end
   return spec
 end

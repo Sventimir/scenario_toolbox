@@ -36,6 +36,7 @@ function Spawn:spawn(hex, side)
   local us = {}
   for desc in self:placement(hex, side) do
     local u = wesnoth.units.create(desc)
+    u.x, u.y = wesnoth.paths.find_vacant_hex(hex.x, hex.y)
     animation:add(u, "recruited", "")
     wesnoth.units.to_map(u)
     table.insert(us, u)
@@ -116,7 +117,7 @@ end
 if wesnoth.wml_actions then -- only at runtime
   function wesnoth.wml_actions.spawn(spec)
     local spawn_proto = spec.type and Spawn[spec.type] or Spawn
-    local spawn = spawn_proto:new(spec)
+    local spawn = spawn_proto:new(wml.literal(spec))
     local hex = Hex:from_wesnoth(wesnoth.map.get(spec.x, spec.y))
     spawn:spawn(hex, spec.side or wml.variables.current_side)
   end
