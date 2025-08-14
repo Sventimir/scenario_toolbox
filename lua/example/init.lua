@@ -136,17 +136,6 @@ wesnoth.game_events.add_menu(
 
 wesnoth.game_events.add({
     name = "die",
-    id = "boss-defeated",
-    first_time_only = false,
-    filter = { wml.tag.filter({ role = "boss" }) },
-    content = {
-        wml.tag.remove_time_area({ id = "boss-fight" }),
-        wml.tag.endlevel({ result = "victory" })
-    }
-})
-
-wesnoth.game_events.add({
-    name = "die",
     id = "hero-defeated",
     first_time_only = false,
     filter = { 

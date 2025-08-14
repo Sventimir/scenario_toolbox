@@ -129,6 +129,8 @@ function Site.altar:wml(x, y)
     }
     table.insert(boss_menu, wml.tag.filter_location(filter))
     local spawn = wml.merge(self.boss, location, "append")
+    local time_area_id = string.format("%s-boss-fight", self.biome.name)
+    local boss_defeat_id = string.format("%s-boss-defeated", self.biome.name)
     spawn.side = self.biome.side.side
     local cmd = {
       wml.tag.inventory({
@@ -138,6 +140,7 @@ function Site.altar:wml(x, y)
           quantity = 1,
       }),
       wml.tag.time_area({
+          id = time_area_id,
           x = "$x1", y = "$y1", radius = 3,
           wml.tag.time({
               name = "Aura Przedwiecznego",
@@ -150,6 +153,7 @@ function Site.altar:wml(x, y)
           })
       }),
       wml.tag.spawn(spawn),
+      -- this is fine for now, but needs to be moved elsewhere when more bosses are added.
       wml.tag.lua({
           code = [[ local Dialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
                     local us = wesnoth.units.find({ side = "1,2" })
@@ -157,6 +161,15 @@ function Site.altar:wml(x, y)
                     local d = Dialogue(avatar[1], us[1], us[2])
                     d:play()
                  ]]
+      }),
+      wml.tag.event({
+          name = "die",
+          id = boss_defeat_id,
+          first_time_only = false,
+          wml.tag.filter({ id = spawn.id }),
+          wml.tag.remove_time_area({ id = time_area_id }),
+          wml.tag.endlevel({ result = "victory" }),
+          wml.tag.event({ id = boss_defeat_id }),
       })
     }
     table.insert(boss_menu, wml.tag.command(cmd))
