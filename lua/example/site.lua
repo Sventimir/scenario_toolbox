@@ -57,11 +57,8 @@ end
 Site.altar = {
   name = "altar",
   image = "items/altar-evil.png",
-  radius = Prob.Normal:new()
 }
 setmetatable(Site.altar, { __index = Site })
-
-Site.altar.radius.lerp_strict = true
 
 function Site.altar:new(spec, biome)
   local alt = Site.new(self)
@@ -153,15 +150,6 @@ function Site.altar:wml(x, y)
           })
       }),
       wml.tag.spawn(spawn),
-      -- this is fine for now, but needs to be moved elsewhere when more bosses are added.
-      wml.tag.lua({
-          code = [[ local Dialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
-                    local us = wesnoth.units.find({ side = "1,2" })
-                    local avatar = wesnoth.units.find({ id = "meadows-boss" })
-                    local d = Dialogue(avatar[1], us[1], us[2])
-                    d:play()
-                 ]]
-      }),
       wml.tag.event({
           name = "die",
           id = boss_defeat_id,
@@ -169,9 +157,19 @@ function Site.altar:wml(x, y)
           wml.tag.filter({ id = spawn.id }),
           wml.tag.remove_time_area({ id = time_area_id }),
           wml.tag.endlevel({ result = "victory" }),
-          wml.tag.event({ id = boss_defeat_id }),
+          wml.tag.event({ id = boss_defeat_id, remove = true }),
       })
     }
+    if self.biome.name == "meadows" then
+      local dialogue_code =
+        [[ local Dialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
+           local us = wesnoth.units.find({ side = "%s" })
+           local avatar = wesnoth.units.find({ id = "meadows-boss" })
+           local d = Dialogue(avatar[1], us[1], us[2])
+           d:play()
+        ]]
+        table.insert(cmd, wml.tag.lua({ code = string.format(dialogue_code, self.player_sides)}))
+    end
     table.insert(boss_menu, wml.tag.command(cmd))
     local prestart = {
       name = "prestart",
@@ -201,6 +199,7 @@ end
 
 function Site:init(map, cfg)
   self.map = map
+  self.player_sides = str.join(take(cfg.player_count, arith.nats()), ",")
 end
 
 return Site
