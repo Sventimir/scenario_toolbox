@@ -20,7 +20,7 @@ function Spawn:new(unit)
 end
 
 function Spawn:placement(hex, side)
-  local u = wml.literal(self)
+  local u = wml.clone(wml.get_child(self, "unit"))
   u.x = hex.x
   u.y = hex.y
   if not u.side then u.side = side end
@@ -62,9 +62,9 @@ function Spawn.wolf_pack:placement(hex, side)
     function()
       if hexes.size > 0 then
         local h = hexes:pop_random()
-        local u = wml.literal(self.unit)
-        u.x = hex.x
-        u.y = hex.y
+        local u = wml.clone(wml.literal(self.unit))
+        u.x = h.x
+        u.y = h.y
         if side then u.side = side end
         return u
       else
@@ -79,39 +79,36 @@ Spawn.family = setmetatable({}, { __index = Spawn })
 
 function Spawn.family:new(spec)
   local s = {
-    min_offspring = spec.min_offspring,
-    max_offspring = spec.max_offspring,
+    min_offspring = spec.min_offspring or 1,
+    max_offspring = spec.max_offspring or 6,
     parent = wml.get_child(spec, "parent"),
     child = wml.get_child(spec, "child")
   }
   return setmetatable(s, { __index = self })
 end
 
-function Spawn:family(parent_type, child_type, min_size, max_size)
-  local this = Spawn:new(parent_type)
-  this.child_type = child_type
-  this.min_size = min_size or 1
-  this.max_size = max_size or 6
+function Spawn.family:decorate(wml_tag, hex, side)
+  local u = wml.merge(wml_tag, hex:coords(), "append")
+  if not u.side then u.side = side end
+  return u
+end
 
-  function this:placement(hex, side)
-    local hexes = as_table(filter(Spawn.valid_location, hex:circle(1)))
-    return chain(
-      Spawn.placement(self, hex, side),
-      repeatedly(
-        function()
-          if #hexes > 0 then
-            local h = table.remove(hexes, mathx.random(#hexes))
-            return { type = self.child_type, side = side, x = h.x, y = h.y }
-          else
-            return nil
-          end
-        end,
-        mathx.random(self.min_size, self.max_size)
-      )
+function Spawn.family:placement(hex, side)
+  local hexes = Hex.Set:new(filter(Spawn.valid_location, hex:circle(1)))
+  return chain(
+    iter({ self:decorate(self.parent, hex, side) }),
+    repeatedly(
+      function()
+        if hexes.size > 0 then
+          local h = hexes:pop_random()
+          return self:decorate(self.child, hex, side)
+        else
+          return nil
+        end
+      end,
+      mathx.random(self.min_offspring, self.max_offspring)
     )
-  end
-
-  return this
+  )
 end
 
 if wesnoth.wml_actions then -- only at runtime

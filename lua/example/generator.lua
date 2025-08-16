@@ -129,18 +129,18 @@ end
 
 function Gen:initial_spawn(biome, side)
   local available_hexes = Hex.Set:new(biome.hexes:iter())
-  local spawns = biome.spawn.passive or {}
 
   for h in self.units:iter() do
     available_hexes = available_hexes:diff(Hex.Set:new(h:in_circle(5)))
   end
 
   local function it()
-    while #spawns > 0 and available_hexes.size > 0 do
+    while #biome.spawn > 0 and available_hexes.size > 0 do
       local hex = available_hexes:pop_random()
       available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
       self.units:add(hex)
-      return spawns[mathx.random(#spawns)]:wml(hex, side.side)
+      local spawn = biome.spawn[mathx.random(#biome.spawn)]
+      return spawn:wml(hex, side)
     end
   end
 
@@ -190,8 +190,7 @@ function Gen:make(cfg)
     table.insert(self.biomes, biome)
     boss.color = biome.color
     boss.team_name = biome.name
-    local vars = { biome = biome.name, wml.tag.sites({}) }
-    table.insert(boss, wml.tag.variables(vars))
+    table.insert(boss, wml.tag.variables({ biome = biome.name }))
     table.insert(s, wml.tag.side(boss))
     i = i + 1
   end
@@ -254,13 +253,13 @@ function Gen:make(cfg)
 
   s.map_data = self.map:as_map_data()
 
-  -- for side in drop(cfg.player_count, wml.child_range(s, "side")) do
-  --   local vars = wml.get_child(side, "variables")
-  --   local biome = self.biomes[vars.biome]
-  --   for u in self:initial_spawn(biome, boss) do
-  --     table.insert(side, u)
-  --   end
-  -- end
+  for side in drop(cfg.player_count, wml.child_range(s, "side")) do
+    local vars = wml.get_child(side, "variables")
+    local biome = self.biomes[vars.biome]
+    for u in self:initial_spawn(biome, side.side) do
+      table.insert(side, u)
+    end
+  end
 
   local schedule = wml.child_array(s, "time")
   for biome in iter(self.biomes) do
@@ -270,9 +269,7 @@ function Gen:make(cfg)
   local vars = as_table(
     map(
       function(h)
-        return wml.tag.sites({
-            x = h.x, y = h.y, type = h.site,
-        })
+        return wml.tag.sites({ x = h.x, y = h.y, type = h.site })
       end,
       self.sites:iter()
     )

@@ -1,5 +1,6 @@
 local Hex = require("scenario_toolbox/lua/map/hex")
 local Overlay = require("scenario_toolbox/lua/map/overlay")
+local Spawn = require("scenario_toolbox/lua/units/spawn")
 
 local Biome = {}
 Biome.__index = Biome
@@ -18,6 +19,7 @@ function Biome:new(spec, side)
     },
     overlay = {},
     sites = {},
+    spawn = {},
     hexes = Hex.Set:new(),
     side = side,
   }
@@ -28,6 +30,11 @@ function Biome:new(spec, side)
 
   for site in wml.child_range(spec, "site") do
     table.insert(biome.sites, Site[site.type]:new(site, biome))
+  end
+
+  for spawn in wml.child_range(spec, "spawn") do
+    local constr = spawn.type and Spawn[spawn.type] or Spawn
+    table.insert(biome.spawn, constr:new(spawn))
   end
 
   return setmetatable(biome, self)
