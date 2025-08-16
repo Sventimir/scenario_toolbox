@@ -1,21 +1,19 @@
 wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
-local Spawn = require("scenario_toolbox/lua/units/spawn")
-local Hex = require("scenario_toolbox/lua/map/hex")
+Spawn = require("scenario_toolbox/lua/units/spawn")
+Hex = require("scenario_toolbox/lua/map/hex")
 Item = require("scenario_toolbox/lua/item")
 Inventory = require("scenario_toolbox/lua/units/inventory")
 ShazzaDialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
-local enemies = wesnoth.sides.find({ wml.tag["not"]({ team_name = "Bohaterowie" }) })
-local boss = wesnoth.sides.find({ team_name = "meadows" })[1]
-local sites = Hex.Set:new()
+local meadows = wesnoth.sides.find({ team_name = "meadows" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
 micro_ai = {
   wml.tag.micro_ai({
       ai_type = "swarm",
-      side = boss.side,
+      side = meadows.side,
       action = "add",
       wml.tag.filter({ type = "Raven" }),
       wml.tag.avoid({
@@ -27,12 +25,12 @@ micro_ai = {
   }),
   wml.tag.micro_ai({
       ai_type = "big_animals",
-      side = boss.side,
+      side = meadows.side,
       action = "add",
       wml.tag.filter({
           type="Giant Rat",
           wml.tag.filter_location({
-              wml.tag["not"]({ area = "boss-fight" })
+              wml.tag["not"]({ area = "meadows-fight" })
           })
       }),
       wml.tag.filter_location({ terrain = meadows_terrain }),
@@ -40,7 +38,7 @@ micro_ai = {
   }),
   wml.tag.micro_ai({
       ai_type ="forest_animals",
-      side = boss.side,
+      side = meadows.side,
       action = "add",
       tusker_type = "Woodland Boar",
       tusklet_type = "Piglet",
@@ -49,7 +47,7 @@ micro_ai = {
   }),
   wml.tag.micro_ai({
       ai_type = "assassin",
-      side = boss.side,
+      side = meadows.side,
       action = "add",
       wml.tag.filter({ type = "Wolf" }),
       wml.tag.filter_second({

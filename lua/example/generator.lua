@@ -1,4 +1,4 @@
-Biome = require("scenario_toolbox/lua/example/biome")
+Biome = require("scenario_toolbox/lua/map/biome")
 CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
 Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
