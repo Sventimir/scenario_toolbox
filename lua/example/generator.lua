@@ -64,7 +64,9 @@ function Gen:height_map()
   hexes:remove(self.center)
   while hexes.size > 0 do
     local hex = hexes:pop_random()
-    if hex:distance(self.center) < interior_size then
+    if hex:distance(self.center) <= 2 then
+      hex.height = 0
+    elseif hex:distance(self.center) < interior_size then
       self:interior_height(hex)
     elseif self:within_fjord_border(hex) then
       self:fjord_height(hex)
