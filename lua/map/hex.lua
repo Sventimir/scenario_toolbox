@@ -25,6 +25,7 @@ function Hex:from_wesnoth(hex)
   end
 
   hex.equals = Hex.equals
+  hex.coords = Hex.coords
   hex.circle = Hex.circle
   hex.in_circle = Hex.in_circle
   hex.as_vec = Hex.as_vec

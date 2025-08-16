@@ -15,6 +15,14 @@ else
   end
 end
 
+function Spawn.from_spec(spec)
+  if spec.type then
+    return Spawn[spec.type]:new(spec)
+  else
+    return Spawn:new(spec)
+  end
+end
+
 function Spawn:new(unit)
   return setmetatable(unit, self)
 end

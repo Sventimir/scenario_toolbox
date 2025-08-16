@@ -251,7 +251,7 @@ function Site.burial:wml(x, y)
     first_time_only = false,
     wml.tag.filter_condition({
         wml.tag.have_location({
-            wml.tag.filter({ side = self.playersides }),
+            wml.tag.filter({ side = self.player_sides }),
             wml.tag["and"](neighbourhood)
         }),
         wml.tag["not"]({ wml.tag.have_location(current_spawn) }),

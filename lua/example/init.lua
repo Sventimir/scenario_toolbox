@@ -183,3 +183,29 @@ wesnoth.game_events.add({
       end
     end,
 })
+
+function nightly_respawn(spec)
+  local spawns = {}
+  for s in wml.child_range(spec, "spawn") do
+    table.insert(spawns, Spawn.from_spec(wml.literal(s)))
+  end
+  if #spawns == 0 then return end 
+  local hexes = wesnoth.map.find({
+      time_of_day = "chaotic",
+      area = spec.area,
+      owner_side = "0," .. spec.side,
+      wml.tag.filter_vision({ visible = false, side = players_str }),
+      wml.tag["not"]({
+          wml.tag.filter({}),
+          wml.tag["or"]({ owner_side = players_str }),
+          radius = 5,
+      })
+  })
+  local hexset = Hex.Set:new(iter(hexes))
+  while hexset.size > 0 do
+    local s = spawns[mathx.random(#spawns)]
+    local hex = Hex:from_wesnoth(hexset:random())
+    hexset = hexset:diff(Hex.Set:new(hex:in_circle(5)))
+    s:spawn(hex, spec.side)
+  end
+end

@@ -170,7 +170,7 @@ function Gen:make(cfg)
     table.insert(s, wml.tag.side(side))
   end
 
-  local i = cfg.player_count
+  local i = cfg.player_count + 1
   for biome_wml in wml.child_range(cfg, "biome") do
     boss = {
         side = i,
@@ -259,6 +259,29 @@ function Gen:make(cfg)
     for u in self:initial_spawn(biome, side.side) do
       table.insert(side, u)
     end
+
+    local origin_at_night = self.center:coords()
+    origin_at_night.time_of_day = "chaotic"
+    local respawn_args = {
+      area = biome.name,
+      side = side.side,
+    }
+    local biome_wml = wml.find_child(cfg, "biome", { name = biome.name })
+    for spawn in wml.child_range(biome_wml, "spawn") do
+      table.insert(respawn_args, wml.tag.spawn(spawn))
+    end
+    local respawn = {
+      name = string.format("side %i turn", side.side),
+      first_time_only = false,
+      wml.tag.filter_condition({
+          wml.tag.have_location(origin_at_night)
+      }),
+      wml.tag.lua({
+          code = [[ nightly_respawn(...) ]],
+          wml.tag.args(respawn_args)
+      })
+    }
+    table.insert(s, wml.tag.event(respawn))
   end
 
   local schedule = wml.child_array(s, "time")
