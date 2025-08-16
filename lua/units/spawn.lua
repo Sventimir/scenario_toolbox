@@ -20,10 +20,10 @@ function Spawn:new(unit)
 end
 
 function Spawn:placement(hex, side)
-  local u = wml.clone(self)
+  local u = wml.literal(self)
   u.x = hex.x
   u.y = hex.y
-  if side then u.side = side end
+  if not u.side then u.side = side end
   return iter({u})
 end
 

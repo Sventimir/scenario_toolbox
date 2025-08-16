@@ -10,6 +10,10 @@ function Site:new()
   return setmetatable({ variables = {} }, { __index = self })
 end
 
+function Site:sample_distance(spec)
+  return spec.prob:sample_int(spec.minimum, spec.maximum)
+end
+
 function Site:wml(x, y)
   local spec = {
     name = self.name,
@@ -17,13 +21,6 @@ function Site:wml(x, y)
     visible_in_fog = true,
     wml.tag.variables(self.variables),
   }
-  if y then
-    spec.x = x
-    spec.y = y
-  else
-    spec.x = x.x
-    spec.y = x.y
-  end
   return { wml.tag.item(wml.merge(spec, wesnoth.map.read_location(x, y), "append")) }
 end
 
@@ -194,11 +191,113 @@ function Site.altar:place(origin, available_hexes)
   if hexset:empty() then
     error("No valid locations for altar!")
   end
-  return self:wml(hexset:random())
+  self.altars[self.biome.name] = hexset:random()
+  return iter({ self:wml(self.altars[self.biome.name]) })
 end
 
-function Site:init(map, cfg)
+Site.burial = {
+  name = "burial",
+  image = "items/burial.png",
+}
+setmetatable(Site.burial, { __index = Site })
+
+function Site.burial:new(spec, biome)
+  local burial = Site.new(self)
+  burial.biome = biome
+  burial.variables.title = "Miejsce pochówku"
+  burial.variables.description = "Miejsce pochówku prawdawnego bohatera. Pewnie jest nawiedzone..."
+  burial.count = spec.count
+  burial.spawn = wml.child_array(spec, "spawn")
+  burial.distance = {}
+  for loc in iter({ "origin", "altar" }) do
+    local dist = wml.get_child(spec, "distance_from_" .. loc)
+    burial.distance[loc] = {
+      minimum = dist.minimum,
+      maximum = dist.maximum,
+      prob = Prob.Normal:new(dist.mean, dist.standard_deviation),
+    }
+  end
+  return burial
+end
+
+function Site.burial:wml(x, y)
+  local spec = Site.wml(self, x, y)
+  local location = wesnoth.map.read_location(x, y)
+  local neighbourhood = wml.clone(location)
+  neighbourhood.radius = 5
+  local spawn = self.spawn[mathx.random(#self.spawn)]
+  spawn.role = "burial"
+
+  local current_spawn = {
+    wml.tag.filter({
+        side = self.biomes.swamp.side.side,
+        role = "burial",
+    }),
+    wml.tag["and"](wml.clone(neighbourhood))
+  }
+  local lua = {
+      code = [[ local Site = require("scenario_toolbox/lua/example/site_events")
+                Site.burial:new():spawn(...)
+             ]],
+      wml.tag.args({
+        side = self.biomes.swamp.side.side,
+        wml.tag.location(neighbourhood),
+        wml.tag.spawn(spawn)
+      })
+  }
+  local spawn_event = {
+    name = string.format("side %i turn", self.biomes["swamp"].side.side),
+    id = string.format("burial-spawn-%i-%i", location.x, location.y),
+    first_time_only = false,
+    wml.tag.filter_condition({
+        wml.tag.have_location({
+            wml.tag.filter({ side = self.playersides }),
+            wml.tag["and"](neighbourhood)
+        }),
+        wml.tag["not"]({ wml.tag.have_location(current_spawn) }),
+    }),
+    wml.tag.lua(lua)
+  }
+  table.insert(spec, wml.tag.event(spawn_event))
+
+  return spec
+end
+
+function Site.burial:place(origin, available_hexes)
+  local wmls = {}
+  for i = 1, self.count do
+    local altar_origin_dist = origin:distance(self.altars[self.biome.name])
+    local dist_origin = self:sample_distance(self.distance.origin)
+    local min_altar_dist = mathx.abs(altar_origin_dist - dist_origin)
+    local max_altar_dist = altar_origin_dist + dist_origin
+    self.distance.altar.minimum = mathx.max(self.distance.altar.minimum, min_altar_dist)
+    self.distance.altar.maximum = mathx.min(self.distance.altar.maximum, max_altar_dist)
+    self.distance.altar.prob.mean = arith.mean(
+      iter({
+          self.distance.altar.minimum,
+          self.distance.altar.maximum,
+      })
+    )
+    local dist_altar = self:sample_distance(self.distance.altar)
+    local orig_circ = Hex.Set:new(origin:circle(dist_origin))
+    local altar_circ = Hex.Set:new(self.altars[self.biome.name]:circle(dist_altar))
+    local intersect = orig_circ:intersect(altar_circ)
+    local available = available_hexes:intersect(intersect)
+    local r = 0
+    while available.size == 0 do
+      r = r + 1
+      available = Hex.Set:new(join(map(function(h) return h:circle(r) end, intersect:iter())))
+      available = available:intersect(available_hexes)
+    end
+    table.insert(wmls, self:wml(available:random()))
+  end
+  return iter(wmls)
+end
+
+function Site:init(map, biomes, cfg)
   self.map = map
+  self.biomes = biomes
+  self.altars = {}
   self.player_sides = str.join(take(cfg.player_count, arith.nats()), ",")
 end
 

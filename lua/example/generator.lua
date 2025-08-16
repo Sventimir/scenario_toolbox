@@ -197,7 +197,7 @@ function Gen:make(cfg)
   end
  
   self.map = Map:new(cfg.width, cfg.height, self.biomes.meadows)
-  Site:init(self.map, cfg)
+  Site:init(self.map, self.biomes, cfg)
 
   self:height_map()
   self:gen_biome_centers()
@@ -231,13 +231,14 @@ function Gen:make(cfg)
 
   for biome in iter(self.biomes) do
     for site in iter(biome.sites) do
-      local site_wml = site:place(self.center, hexes:intersect(biome.hexes))
-      s = wml.merge(s, site_wml, "append")
-      for item in wml.child_range(site_wml, "item") do
-        local hex = self.map:get(item.x, item.y)
-        hexes:remove(item)
-        hex.site = site.name
-        self.sites:add(hex)
+      for site_wml in site:place(self.center, hexes:intersect(biome.hexes)) do
+        s = wml.merge(s, site_wml, "append")
+        for item in wml.child_range(site_wml, "item") do
+          local hex = self.map:get(item.x, item.y)
+          hexes:remove(item)
+          hex.site = site.name
+          self.sites:add(hex)
+        end
       end
     end
   end
