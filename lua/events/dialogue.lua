@@ -1,8 +1,7 @@
 Dialogue = {}
-Dialogue.__index = Dialogue
 
 function Dialogue:new()
-  return setmetatable({ interrupted = false }, self)
+  return setmetatable({ interrupted = false }, { __index = self })
 end
 
 function Dialogue:add(line)
@@ -17,31 +16,41 @@ function Dialogue:play()
   end
 end
 
-Dialogue.Line = {}
-Dialogue.Line.__index = Dialogue.Line
+Dialogue.Entry = {}
 
-function Dialogue.Line:new(speaker, message, title)
-  return setmetatable({ speaker = speaker, message = message, title = title }, self)
-end
-
-function Dialogue.Line:play(interrupted)
+function Dialogue.Entry:play(interrupted)
   if not interrupted then
-    return gui.show_narration({
-        portrait = self.speaker.portrait,
-        title = self.title or self.speaker.name,
-        message = self.message,
-    })
+    return self:display()
   end
 end
 
-Dialogue.Animation = {}
-Dialogue.Animation.__index = Dialogue.Animation
+Dialogue.Line = setmetatable({}, { __index = Dialogue.Entry })
 
-function Dialogue.Animation:new(hex, halos, duration, sound)
-  return setmetatable({ hex = hex, halos = halos, duration = duration, sound = sound }, self)
+function Dialogue.Line:new(speaker, message, title)
+  return setmetatable(
+    { speaker = speaker, message = message, title = title }
+    , { __index = self }
+  )
 end
 
-function Dialogue.Animation:play()
+function Dialogue.Line:display()
+  return gui.show_narration({
+      portrait = self.speaker.portrait,
+      title = self.title or self.speaker.name,
+      message = self.message,
+  })
+end
+
+Dialogue.Animation = setmetatable({}, { __index = Dialogue.Entry })
+
+function Dialogue.Animation:new(hex, halos, duration, sound)
+  return setmetatable(
+    { hex = hex, halos = halos, duration = duration, sound = sound }
+    , { __index = self }
+  )
+end
+
+function Dialogue.Animation:display()
   if self.sound then
     wesnoth.audio.play(self.sound)
   end
