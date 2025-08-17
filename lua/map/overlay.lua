@@ -6,6 +6,7 @@ end
 
 function Overlay:apply(hex)
   hex.terrain = string.format("%s^%s", hex.terrain, self.code)
+  return Hex.Set:singleton(hex)
 end
 
 function Overlay.select(options, hex)
@@ -38,7 +39,8 @@ function Overlay.none:weigh(hex)
   return self.freq
 end
 
-function Overlay.none:apply()
+function Overlay.none:apply(hex)
+  return Hex.Set:singleton(hex)
 end
 
 Overlay.forest = Overlay:new({ name = "forest" })
@@ -113,6 +115,7 @@ function Overlay.castle:apply(hex)
   else
     hex.terrain = self.keep
   end
+  return Hex.Set:singleton(hex)
 end
 
 return Overlay

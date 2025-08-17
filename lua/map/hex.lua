@@ -109,7 +109,7 @@ Hex.Set = {}
 Hex.Set.__index = Hex.Set
 
 function Hex.Set:new(hexes, state, ctrl)
-  local this = setmetatable({}, self)
+  local this = setmetatable({}, { __index = self })
   this.size = 0
   this.max_row = 0
   this.min_row = 0
@@ -119,6 +119,12 @@ function Hex.Set:new(hexes, state, ctrl)
     end
   end
   return this
+end
+
+function Hex.Set:singleton(hex)
+  local set = self:new()
+  set:add(hex)
+  return set
 end
 
 function Hex.Set:add(hex)
@@ -225,7 +231,7 @@ function Hex.Set:intersect(other)
 end
 
 function Hex.Set:diff(other)
-  return Hex.Set:new(filter(function(h) return not other:member(h) end, self:iter()))
+  return self:filter(function(h) return not other:member(h) end)
 end
 
 function Hex.Set:union(other)

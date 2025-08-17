@@ -209,14 +209,17 @@ function Gen:make(cfg)
   local hexes = Hex.Set:new(self.map:iter())
   local camp = Hex.Set:new(self.center:circle(3)):pop_random()
   local ov = any(Predicate:has("name", "castle"), iter(self.biomes.meadows.overlay))
-  ov:apply(camp)
-  hexes:remove(camp)
+  local overlayed = ov:apply(camp)
+  hexes = hexes:diff(overlayed)
 
   while hexes.size > 0 do
-    local hex = hexes:pop_random()
+    local hex = hexes:random()
     hex.terrain = hex.biome.terrain[hex.height]
     ov = Overlay.select(hex.biome.overlay, hex)
-    if ov then ov:apply(hex) end
+    if ov then
+      local overlayed = ov:apply(hex)
+      hexes = hexes:diff(overlayed)
+    end
   end
 
   hexes = Hex.Set:new(
