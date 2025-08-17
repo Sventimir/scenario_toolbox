@@ -8,6 +8,15 @@ function Prob.Normal:new(mean, stddev)
   )
 end
 
+function Prob.Normal:from_wml(spec)
+  return self:new(spec.mean, spec.standard_deviation)
+end
+
+function Prob.Normal:probability(x)
+  local exp = -0.5 * ((x - self.mean) / self.stddev) ^ 2
+  return 1 / (mathx.sqrt(2 * mathx.pi) * self.stddev) * mathx.exp(exp)
+end
+
 -- Sample any normally distributed real number, expecting 0
 -- with standard deviation of 1. Use Box-Muller transform.
 -- This method generates 2 random values in one go, so we can

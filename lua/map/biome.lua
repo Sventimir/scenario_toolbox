@@ -1,5 +1,6 @@
 local Hex = require("scenario_toolbox/lua/map/hex")
 local Overlay = require("scenario_toolbox/lua/map/overlay")
+local Prob = require("scenario_toolbox/lua/lib/probability")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 
 local Biome = {}
@@ -22,6 +23,7 @@ function Biome:new(spec, side)
     spawn = {},
     hexes = Hex.Set:new(),
     side = side,
+    distance_from_center = Prob.Normal:from_wml(wml.get_child(spec, "distance_from_center"))
   }
 
   for ov in wml.child_range(spec, "overlay") do

@@ -90,13 +90,37 @@ function Gen:gen_biome_centers()
       self.map:iter()
     )
   )
-  local biomes = cycle(self.biomes)
   while hexes.size > 0 do
-    local biome = biomes()
     local hex = hexes:pop_random()
-    hexes = hexes:diff(Hex.Set:new(hex:in_circle(10)))
-    biome:add_hex(hex)
-    table.insert(self.biome_centers, hex)
+    local biome = self:biomeset(hex)
+    if biome then
+      hexes = hexes:diff(Hex.Set:new(hex:in_circle(10)))
+      biome:add_hex(hex)
+      table.insert(self.biome_centers, hex)
+    end
+  end
+end
+
+function Gen:biomeset(hex)
+  local distance = hex:distance(self.center)
+  local biomes = {}
+  local total_prob = 0
+  for biome in iter(self.biomes) do
+    local probability = mathx.round(
+      1000 * biome.distance_from_center:probability(distance)
+    )
+    table.insert(biomes, { prob = probability, biome = biome })
+    total_prob = total_prob + probability
+  end
+  if total_prob > 0 then
+    local roll = mathx.random(0, total_prob - 1)
+    for b in iter(biomes) do
+      if roll < b.prob then
+        return b.biome
+      else
+        roll = roll - b.prob
+      end
+    end
   end
 end
 
