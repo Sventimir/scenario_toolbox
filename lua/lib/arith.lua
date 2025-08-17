@@ -70,6 +70,10 @@ function mod.gcd(a, b)
   return mathx.max(a, b)
 end
 
+function mod.factorial(n)
+  return fold(mod.mul, 1, take(n, mod.nats()))
+end
+
 -- Ratios are mostly useful for random checks with some prescribed chance
 -- of success. Therefore no need to implement other arith operations.
 mod.Ratio = {}
