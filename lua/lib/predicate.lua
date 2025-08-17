@@ -2,11 +2,11 @@ local Predicate = {}
 Predicate.__index = Predicate
 
 function Predicate:new(f)
-  return setmetatable({ f = f }, Predicate)
+  return setmetatable({ f = f }, { __index = self })
 end
 
 function Predicate:func(f)
-  return setmetatable({f = function(_, _, ...) return f(...) end }, Predicate)
+  return setmetatable({f = function(_, _, ...) return f(...) end }, { __index = self })
 end
 
 function Predicate:__call(...)

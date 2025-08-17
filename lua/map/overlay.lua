@@ -1,3 +1,4 @@
+local Prob = require("scenario_toolbox/lua/lib/probability")
 local Overlay = {}
 
 function Overlay:new(props)
@@ -88,34 +89,30 @@ function Overlay.castle:new(spec)
       keep = spec.keep,
       castle = spec.castle,
       kfreq = spec.keep_frequency,
-      cfreq = spec.castle_frequency,
       distance = spec.distance,
+      size = Prob.Normal:new(spec.mean_size, spec.size_std_dev)
   })
 end
 
 function Overlay:weigh(hex)
-  local adjacent_keep = any(Hex.is_keep, hex:circle(1))
-  if adjacent_keep and adjacent_keep.biome.name == hex.biome.name then
-    local castle_size = count(filter(Hex.is_castle, adjacent_keep:circle(1)))
-    if castle_size > 0 then
-      return mathx.round(self.cfreq / mathx.max(1, castle_size))
-    else
-      return self.cfreq ^ 3
-    end
-  else
-    local nearby_keep = any(Hex.is_keep, hex:in_circle(self.distance))
-    return nearby_keep and 0 or self.kfreq
-  end
+  local nearby_keep = any(Hex.is_keep, hex:in_circle(self.distance))
+  local no_free_neighbours = all(Hex.has_overlay, hex:circle(1))
+  return (nearby_keep or no_free_neighbours) and 0 or self.kfreq
 end
 
 function Overlay.castle:apply(hex)
-  local adjacent_keep = any(Hex.is_keep, hex:circle(1))
-  if adjacent_keep then
-    hex.terrain = self.castle
-  else
-    hex.terrain = self.keep
+  local castle = Hex.Set:singleton(hex)
+  local neighbours = Hex.Set:new(
+    hex:circle(1)):filter(function(h) return not h:has_overlay() end
+  )
+  local size = self.size:sample_int(1, neighbours.size)
+  hex.terrain = self.keep
+  for _ = 1, size do
+    local h = neighbours:pop_random()
+    h.terrain = self.castle
+    castle:add(h)
   end
-  return Hex.Set:singleton(hex)
+  return castle
 end
 
 return Overlay

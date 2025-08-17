@@ -89,6 +89,10 @@ function Hex:is_border()
     or self.y <= 0 or self.y >= self.map.height
 end
 
+function Hex:has_overlay()
+  return string.find(self.terrain, "%^")
+end
+
 function Hex:has_forest()
   return string.find(self.terrain, "%^F")
 end
