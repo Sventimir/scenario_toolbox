@@ -130,6 +130,7 @@ function Gen:expand_biomes()
 end
 
 function Gen:initial_spawn(biome, side)
+  if #biome.spawn == 0 then return function() end end
   local available_hexes = Hex.Set:new(biome.hexes:iter())
 
   for h in self.units:iter() do
@@ -137,7 +138,7 @@ function Gen:initial_spawn(biome, side)
   end
 
   local function it()
-    while #biome.spawn > 0 and available_hexes.size > 0 do
+    while available_hexes.size > 0 do
       local hex = available_hexes:pop_random()
       available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
       self.units:add(hex)
