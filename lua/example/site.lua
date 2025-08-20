@@ -115,14 +115,15 @@ function Site.altar:wml(x, y)
     }
     local filter = {
       x = location.x, y = location.y,
-      radius = 1,
       wml.tag["and"]({
           wml.tag.filter_adjacent_location({ wml.tag.filter(unit_filter) }),
           wml.tag["or"]({ wml.tag.filter(unit_filter) })
       }),
     }
     table.insert(boss_menu, wml.tag.filter_location(filter))
-    local spawn = wml.merge(self.boss, location, "append")
+    local unit = wml.clone(self.boss)
+    wml.remove_child(unit, "requirement")
+    local spawn = wml.merge({ wml.tag.unit(unit) }, location, "append")
     local time_area_id = string.format("%s-boss-fight", self.biome.name)
     local boss_defeat_id = string.format("%s-boss-defeated", self.biome.name)
     spawn.side = self.biome.side.side
