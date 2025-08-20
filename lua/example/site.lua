@@ -128,6 +128,10 @@ function Site.altar:wml(x, y)
     local boss_defeat_id = string.format("%s-boss-defeated", self.biome.name)
     spawn.side = self.biome.side.side
     local cmd = {
+      wml.tag.store_unit({
+          variable = "summoner",
+          wml.tag.filter(unit_filter),
+      }),
       wml.tag.inventory({
           wml.tag.filter(unit_filter),
           action = "remove",
@@ -161,13 +165,12 @@ function Site.altar:wml(x, y)
     if self.biome.name == "meadows" then
       local dialogue_code =
         [[ local Dialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
-           local us = wesnoth.units.find({ side = "%s" })
-           local avatar = wesnoth.units.find({ id = "meadows-boss" })
-           local d = Dialogue(avatar[1], us[1], us[2])
+           local d = Dialogue("%s")
            d:play()
         ]]
         table.insert(cmd, wml.tag.lua({ code = string.format(dialogue_code, self.player_sides)}))
     end
+    table.insert(cmd, wml.tag.clear_variable({ name = "summoner" }))
     table.insert(boss_menu, wml.tag.command(cmd))
     local prestart = {
       name = "prestart",
