@@ -1,9 +1,9 @@
 wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
+Dialogue = require("scenario_toolbox/lua/events/dialogue")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Hex = require("scenario_toolbox/lua/map/hex")
 Item = require("scenario_toolbox/lua/item")
 Inventory = require("scenario_toolbox/lua/units/inventory")
-ShazzaDialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")

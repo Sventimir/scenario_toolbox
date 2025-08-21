@@ -61,4 +61,12 @@ function Dialogue.Animation:display()
   end
 end
 
+if wesnoth.wml_actions then
+  function wesnoth.wml_actions.dialogue(spec)
+    local D = require(spec.filename)
+    local d = D:new(spec)
+    d:play(spec)
+  end
+end
+
 return Dialogue

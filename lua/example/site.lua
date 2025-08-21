@@ -38,16 +38,15 @@ end
 function Site.origin:wml(x, y)
   local location = wesnoth.map.read_location(x, y)
   local spec = Site.wml(self, location)
-  local lua_code = [[
-    local opening_dialogue = require("scenario_toolbox/lua/example/dialogues/opening")
-    local d = opening_dialogue({ x = %i, y = %i})
-    d:play()
-  ]]
-  local dialogue = wml.tag.event({
-      name = "start",
-      wml.tag.lua({ code = string.format(lua_code, location.x, location.y) })      
-  })
-  table.insert(spec, dialogue)
+  local dialogue = {
+    name = "start",
+    wml.tag.dialogue({
+      filename = "scenario_toolbox/lua/example/dialogues/opening",
+      x = location.x,
+      y = location.y,
+    })
+  }
+  table.insert(spec, wml.tag.event(dialogue))
   return spec
 end
 
@@ -163,12 +162,11 @@ function Site.altar:wml(x, y)
       })
     }
     if self.biome.name == "meadows" then
-      local dialogue_code =
-        [[ local Dialogue = require("scenario_toolbox/lua/example/dialogues/shazza")
-           local d = Dialogue("%s")
-           d:play()
-        ]]
-        table.insert(cmd, wml.tag.lua({ code = string.format(dialogue_code, self.player_sides)}))
+      local d = {
+        filename = "scenario_toolbox/lua/example/dialogues/shazza",
+        player_sides = cfg.player_sides
+      }
+      table.insert(cmd, wml.tag.dialogue(d))
     end
     table.insert(cmd, wml.tag.clear_variable({ name = "summoner" }))
     table.insert(boss_menu, wml.tag.command(cmd))

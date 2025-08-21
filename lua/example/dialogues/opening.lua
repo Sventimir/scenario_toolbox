@@ -1,12 +1,14 @@
 local Dialogue = require("scenario_toolbox/lua/events/dialogue")
 
+local Opening = {}
+
 local baziol = wesnoth.units.create({
     type = "White Mage",
     profile = "misc/tod-bright.png",
     name = "Baziol",
 })
 
-local function Opening(origin)
+function Opening:new(origin)
   local d = Dialogue:new()
 
   local heroes = wesnoth.units.find({ side = "1,2", canrecruit = true })
