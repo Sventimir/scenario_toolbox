@@ -12,18 +12,6 @@ meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
 micro_ai = {
   wml.tag.micro_ai({
-      ai_type = "swarm",
-      side = meadows.side,
-      action = "add",
-      wml.tag.filter({ type = "Raven" }),
-      wml.tag.avoid({
-          wml.tag.filter_location({
-              wml.tag["not"]({ area = "meadows" })
-          })
-      }),
-      enemy_distance = 3,
-  }),
-  wml.tag.micro_ai({
       ai_type = "big_animals",
       side = meadows.side,
       action = "add",
@@ -42,8 +30,8 @@ micro_ai = {
       action = "add",
       tusker_type = "Woodland Boar",
       tusklet_type = "Piglet",
-      deer_type = "Bay Horse",
-      wml.tag.filter_location({ terrain = meadows_terrain .. ",Ww" })
+      deer_type = "Bay Horse,Raven",
+      wml.tag.filter_location({ area = "meadows" })
   }),
   wml.tag.micro_ai({
       ai_type = "assassin",
