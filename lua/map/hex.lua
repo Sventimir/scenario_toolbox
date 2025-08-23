@@ -242,4 +242,16 @@ function Hex.Set:union(other)
   return Hex.Set:new(chain(self:iter(), other:iter()))
 end
 
+function Hex.Set:partition(f)
+  local results = {}
+  for hex in self:iter() do
+    local key = f(hex)
+    if not results[key] then
+      results[key] = Hex.Set:new()
+    end
+    results[key]:add(hex)
+  end
+  return results
+end
+
 return Hex

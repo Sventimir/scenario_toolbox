@@ -54,6 +54,64 @@ function Gen:within_fjord_border(hex)
     and  hex.y > 2 and hex.y < self.map.height - 2
 end
 
+function Gen:river(spring, border)
+  spring.height = -2
+  local river = Hex.Set:singleton(spring)
+  local bank = Hex.Set:new(spring:circle(1))
+  local current = bank:pop_random()
+  
+  while not border:member(current) do
+    river:add(current)
+    current.height = -1
+    local neighbours = Hex.Set:new(
+      filter(
+        function(h) return not (river:member(h) or bank:member(h)) end,
+        current:circle(1)
+      )
+    )
+    if neighbours.size > 0 then
+      current = neighbours:pop_random()
+    else
+      current = river:random()
+    end
+    bank = bank:union(neighbours)
+  end
+  return river
+end
+
+function Gen:heightmap()
+  hexes = Hex.Set:new(self.map:iter())
+  self.center = self.map:get(self.map.height / 2, self.map.width / 2)
+
+  for hex in self.center:in_circle(2) do
+    hex.height = 0
+    hex.terrain = self.center.biome.terrain[self.center.height]
+    hexes:remove(hex)
+  end
+
+  hexsets = hexes:partition(function(h)
+      if mathx.min(h.x, h.y, self.map.width - h.x, self.map.height - h.y) > 3 then
+        return "interior"
+      else
+        return "border"
+      end
+  end)
+  for hex in hexsets.border:iter() do
+    local border_dist = mathx.min(hex.x, hex.y, self.map.width - hex.x, self.map.height - hex.y)
+    hex.height = mathx.round(mathx.random(0, border_dist) / 3) - 2
+    self.biomes.ocean:add_hex(hex)
+  end
+
+  local river = self:river(hexsets.interior:random(), hexsets.border)
+  while river.size < 60 do
+    river = river:union(self:river(hexsets.interior:diff(river):random(), hexsets.border))
+  end
+
+  for hex in hexsets.interior:diff(river):iter() do
+    hex.height = 0
+  end
+end
+
 function Gen:height_map()
   self.center = self.map:get(self.map.height / 2, self.map.width / 2)
   self.center.height = 0
@@ -225,9 +283,9 @@ function Gen:make(cfg)
   self.map = Map:new(cfg.width, cfg.height, self.biomes.meadows)
   Site:init(self.map, self.biomes, cfg)
 
-  self:height_map()
-  self:gen_biome_centers()
-  self:expand_biomes()
+  self:heightmap()
+  -- self:gen_biome_centers()
+  -- self:expand_biomes()
 
   self.sites = Hex.Set:new()
   local hexes = Hex.Set:new(self.map:iter())
