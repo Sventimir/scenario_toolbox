@@ -1,33 +1,33 @@
 require("scenario_toolbox/lua/lib/core")
 
 local Vec = {}
-Vec.__index = Vec
+local __Vec = { __index = Vec }
 
 function Vec.new(s, se)
-  return setmetatable({ s = s, se = se }, Vec)
+  return setmetatable({ s = s, se = se }, __Vec)
 end
 
 function Vec:sw()
   return - self.s - self.se
 end
 
-function Vec:__add(other)
+function __Vec:__add(other)
   return Vec.new(self.s + other.s, self.se + other.se)
 end
 
-function Vec:__sub(other)
+function __Vec:__sub(other)
   return Vec.new(self.s - other.s, self.se - other.se)
 end
 
-function Vec:__unm()
+function __Vec:__unm()
   return Vec.new(-self.s, -self.se)
 end
 
-function Vec:__eq(other)
+function __Vec:__eq(other)
   return self.s == other.s and self.se == other.se
 end
 
-function Vec:__tostring()
+function __Vec:__tostring()
   return string.format("[%d, %d, %d]", self:sw(), self.s, self.se)
 end
 

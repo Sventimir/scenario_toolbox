@@ -1,5 +1,4 @@
 Prob = { Normal = { mean = 0, stddev = 1 } }
-Prob.__index = Prob
 
 function Prob.Normal:new(mean, stddev)
   return setmetatable(

@@ -175,7 +175,7 @@ wesnoth.game_events.add({
 function nightly_respawn(spec)
   local spawns = {}
   for s in wml.child_range(spec, "spawn") do
-    table.insert(spawns, Spawn.from_spec(wml.literal(s)))
+    table.insert(spawns, Spawn:from_spec(wml.literal(s)))
   end
   if #spawns == 0 then return end 
   local hexes = wesnoth.map.find({

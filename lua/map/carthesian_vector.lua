@@ -1,10 +1,9 @@
 require("scenario_toolbox/lua/lib/core")
 
 local Vec = {}
-Vec.__index = Vec
 
 function Vec:new(x, y)
-  return setmetatable({ x = x, y = y }, Vec)
+  return setmetatable({ x = x, y = y }, { __index = self })
 end
 
 Vec.north = Vec:new(0, -1)

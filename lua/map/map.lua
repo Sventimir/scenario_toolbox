@@ -1,8 +1,10 @@
 local Map = { Hex = require("scenario_toolbox/lua/map/hex") }
-Map.__index = Map
 
 function Map:new(width, height, terrain)
-  local m = setmetatable({ width = width, height = height, default_terrain = terrain }, self)
+  local m = setmetatable(
+    { width = width, height = height, default_terrain = terrain },
+    { __index = self }
+  )
 
   for y = 0, height do
     local row = {}

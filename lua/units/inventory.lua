@@ -1,18 +1,17 @@
 Inventory = {}
-Inventory.__index = Inventory
 
-function Inventory.new(items)
-  return setmetatable({ contents = items }, Inventory)
+function Inventory:new(items)
+  return setmetatable({ contents = items }, { __index = self })
 end
 
-function Inventory.get(unit)
-  local inv = Inventory.new(unit.variables.inventory or {})
+function Inventory:get(unit)
+  local inv = self:new(unit.variables.inventory or {})
   inv.unit = unit
   return inv
 end
 
-function Inventory.consume(unit, item, quantity)
-  local inv = Inventory.get(unit)
+function Inventory:consume(unit, item, quantity)
+  local inv = Inventory:get(unit)
   inv:remove(item, quantity)
   inv:save()
 end
@@ -33,19 +32,6 @@ function Inventory:save()
   self.unit.variables.inventory = self.contents
 end
 
-Inventory.filter = {}
-
-function Inventory.filter.has_item(name)
-  return wml.tag.filter_wml({
-      wml.tag.variables({ 
-          wml.tag.inventory({
-              ["glob_on_" .. name] = "*",
-              wml.tag["not"]({ [name] = 0 })
-          })
-      })
-  })
-end
-
 Inventory.formula = {}
 
 function Inventory.formula.has_item(name, quantity)
@@ -56,7 +42,7 @@ if wesnoth.wml_actions then -- only available at runtime
   function wesnoth.wml_actions.inventory(conf)
     local f = wml.get_child(conf, "filter")
     for u in iter(wesnoth.units.find_on_map(f)) do
-      local inv = Inventory.get(u)
+      local inv = Inventory:get(u)
       inv[conf.action](inv, conf.item, conf.quantity)
       inv:save()
     end

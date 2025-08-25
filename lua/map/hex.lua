@@ -2,6 +2,7 @@ local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 local Predicate = require("scenario_toolbox/lua/lib/predicate")
 
 local Hex = {}
+local __Hex = { __index = Hex }
 
 function Hex:new(map, x, y, biome)
   local this = {
@@ -15,7 +16,7 @@ function Hex:new(map, x, y, biome)
   if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
     biome:add_hex(this)
   end
-  return setmetatable(this, self)
+  return setmetatable(this, __Hex)
 end
 
 function Hex:from_wesnoth(hex)
@@ -59,11 +60,11 @@ function Hex:show()
   return self.terrain
 end
 
-function Hex:__tostring()
+function __Hex:__tostring()
   return string.format("(%d, %d)[%s]", self.x, self.y, self.terrain)
 end
 
-function Hex:__equal(other)
+function __Hex:__equal(other)
   return self.x == other.x and self.y == other.y
 end
 
@@ -110,7 +111,6 @@ function Hex:is_castle()
 end
 
 Hex.Set = {}
-Hex.Set.__index = Hex.Set
 
 function Hex.Set:new(hexes, state, ctrl)
   local this = setmetatable({}, { __index = self })

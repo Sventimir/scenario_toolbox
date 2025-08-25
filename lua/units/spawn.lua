@@ -2,7 +2,6 @@ require("scenario_toolbox/lua/lib/core")
 local Hex = require("scenario_toolbox/lua/map/hex")
 
 local Spawn = {}
-Spawn.__index = Spawn
 
 if wesnoth and wesnoth.current then -- this only exists during game
   function Spawn.valid_location(hex)
@@ -15,16 +14,16 @@ else
   end
 end
 
-function Spawn.from_spec(spec)
+function Spawn:from_spec(spec)
   if spec.type then
-    return Spawn[spec.type]:new(spec)
+    return self[spec.type]:new(spec)
   else
-    return Spawn:new(spec)
+    return self:new(spec)
   end
 end
 
 function Spawn:new(unit)
-  return setmetatable(unit, self)
+  return setmetatable(unit, { __index = self })
 end
 
 function Spawn:placement(hex, side)

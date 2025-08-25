@@ -4,7 +4,6 @@ local Prob = require("scenario_toolbox/lua/lib/probability")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
 
 local Biome = {}
-Biome.__index = Biome
 
 function Biome:new(spec, side)
   local terrain = wml.get_child(spec, "terrain")
@@ -39,7 +38,7 @@ function Biome:new(spec, side)
     table.insert(biome.spawn, constr:new(spawn))
   end
 
-  return setmetatable(biome, self)
+  return setmetatable(biome, { __index = self })
 end
 
 function Biome:add_hex(hex)
