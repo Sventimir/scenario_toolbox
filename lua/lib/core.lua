@@ -231,5 +231,45 @@ function keys(t)
   return keys
 end
 
+Debug = { active = false, tracked = {} }
+
+function Debug:activate()
+  self.active = true
+end
+
+function Debug:deactivate()
+  self.active = false
+end
+
+function Debug:track(name, value)
+  self.tracked[name] = value
+end
+
+function Debug:console(tracked)
+  if self.active then
+    vs = {}
+    for key, val in pairs(self.tracked) do
+      vs[key] = val
+    end
+    for key, val in pairs(tracked) do
+      vs[key] = val
+    end
+    gui.show_lua_console()
+  end
+end
+
+function Debug:catch(...)
+  if self.active then
+    success, value = pcall(...)
+    if success then
+      return value
+    else
+      self:console({ error = value, ... })
+      error(value)
+    end
+  end
+end
+
+
 arith = require("scenario_toolbox/lua/lib/arith")
 str = require("scenario_toolbox/lua/lib/str")

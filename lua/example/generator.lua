@@ -69,10 +69,10 @@ function Gen:river(spring, border)
         current:circle(1)
       )
     )
-    if neighbours.size > 0 then
-      current = neighbours:pop_random()
-    else
+    if neighbours:empty() then
       current = river:random()
+    else
+      current = neighbours:pop_random()
     end
     bank = bank:union(neighbours)
   end
@@ -89,7 +89,7 @@ function Gen:heightmap()
     hexes:remove(hex)
   end
 
-  hexsets = hexes:partition(function(h)
+  local hexsets = hexes:partition(function(h)
       if mathx.min(h.x, h.y, self.map.width - h.x, self.map.height - h.y) > 3 then
         return "interior"
       else
@@ -103,9 +103,6 @@ function Gen:heightmap()
   end
 
   local river = self:river(hexsets.interior:random(), hexsets.border)
-  while river.size < 60 do
-    river = river:union(self:river(hexsets.interior:diff(river):random(), hexsets.border))
-  end
 
   for hex in hexsets.interior:diff(river):iter() do
     hex.height = 0
