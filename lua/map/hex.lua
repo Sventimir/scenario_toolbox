@@ -9,7 +9,7 @@ function Hex:new(map, x, y, biome)
       map = map,
       x = x,
       y = y,
-      height = nil,
+      height = 0,
       terrain = ""
   }
   self.__index = self
@@ -74,6 +74,16 @@ end
 
 function Hex:distance(other)
   return (self:as_vec() - other:as_vec()):length()
+end
+
+function Hex:set_label(text, colour)
+  self.__label = { text = text, colour = colour }
+end
+
+function Hex:label()
+  if self.__label then
+    return wml.merge(self.__label, self:coords())
+  end
 end
 
 function Hex:has_feature(name)
@@ -195,7 +205,7 @@ function Hex.Set:as_area()
   return x, y
 end
 
-function Hex.Set:memeber_pred()
+function Hex.Set:member_pred()
   return Predicate:func(function(x) return self:member(x) end)
 end
 

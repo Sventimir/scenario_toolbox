@@ -4,6 +4,7 @@ Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
 Overlay = require("scenario_toolbox/lua/map/overlay")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
+River = require("scenario_toolbox/lua/map/river")
 Site = require("scenario_toolbox/lua/example/site")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Vec = require("scenario_toolbox/lua/map/cubic_vector")
@@ -26,57 +27,19 @@ function Gen:mean_height_around(hex)
   )
 end
 
-function Gen:border_height(hex)
-  hex.height = - mathx.min(2, mathx.floor(mathx.random(1, 6) / 2))
-  self.biomes.ocean:add_hex(hex)
-end
-
-function Gen:fjord_height(hex)
-  local mean = mathx.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
-  local h = mean + mathx.random(-1, 1)
-  if h >= 0 and mean <= 0 then
-    h = h + mathx.random(0, 1)
-  end
-  hex.height = mathx.max(-2, mathx.min(2, h))
-end
-
 function Gen:interior_height(hex)
-  local mean = mathx.round(arith.mean(filter_map(hex_height, hex:circle(1))) or 0)
-  local d = mathx.round(mathx.random(-2, 2) / 2)
-  if d > 0 then
-    d = d + mathx.random(0, 1)
-  end
-  hex.height = mathx.max(-2, mathx.min(2, mean + d))
+  local mean = arith.mean(filter_map(hex_height, hex:circle(1))) or 0
+  local roll = mathx.random(-1, 2)
+  hex.height = mathx.max(-2, mathx.min(2, mathx.round(mean + (roll / 2))))
 end
 
-function Gen:within_fjord_border(hex)
-  return hex.x > 2 and hex.x < self.map.width - 2
-    and  hex.y > 2 and hex.y < self.map.height - 2
-end
-
-function Gen:river(spring, border)
-  spring.height = -2
-  local river = Hex.Set:singleton(spring)
-  local bank = Hex.Set:new(spring:circle(1))
-  local current = bank:pop_random()
-  
-  while not border:member(current) do
-    river:add(current)
-    current.height = -1
-    local neighbours = Hex.Set:new(
-      filter(
-        function(h) return not (river:member(h) or bank:member(h)) end,
-        current:circle(1)
-      )
-    )
-    if neighbours:empty() then
-      current = river:random()
-    else
-      current = neighbours:pop_random()
-    end
-    bank = bank:union(neighbours)
-  end
-  return river
+function Gen:river(hexsets)
+  local potential_springs = hexsets.interior:filter(function(h)
+      local dist = h:distance(self.center)
+      return dist > 7 and dist < 11
+  end)
+  local river = River:new(potential_springs, hexsets.border)
+  river:generate()
 end
 
 function Gen:heightmap()
@@ -102,37 +65,16 @@ function Gen:heightmap()
     self.biomes.ocean:add_hex(hex)
   end
 
-  local river = self:river(hexsets.interior:random(), hexsets.border)
-
-  for hex in hexsets.interior:diff(river):iter() do
-    hex.height = 0
-  end
-end
-
-function Gen:height_map()
-  self.center = self.map:get(self.map.height / 2, self.map.width / 2)
-  self.center.height = 0
-  self.center.terrain = self.center.biome.terrain[self.center.height]
-
-  local interior_size = (self.map.width + self.map.height) / 10
-  local hexes = Hex.Set:new(self.map:iter())
-  hexes:remove(self.center)
-  while hexes.size > 0 do
-    local hex = hexes:pop_random()
-    if hex:distance(self.center) <= 2 then
-      hex.height = 0
-    elseif hex:distance(self.center) < interior_size then
-      self:interior_height(hex)
-    elseif self:within_fjord_border(hex) then
-      self:fjord_height(hex)
-    else
-      self:border_height(hex)
+  self:river(hexsets)
+  local dim = mathx.sqrt((self.map.width / 2) ^ 2 + (self.map.height / 2) ^ 2)
+  local r = 3
+  while r < dim do
+    for hex in self.center:circle(r) do
+      if hex.height == 0 then
+        self:interior_height(hex)
+      end
     end
-    if hex.height < -1 then
-      self.biomes.ocean:add_hex(hex)
-    else
-      hex.biome:add_hex(hex)
-    end
+    r = r + 1
   end
 end
 
@@ -281,8 +223,8 @@ function Gen:make(cfg)
   Site:init(self.map, self.biomes, cfg)
 
   self:heightmap()
-  -- self:gen_biome_centers()
-  -- self:expand_biomes()
+  self:gen_biome_centers()
+  self:expand_biomes()
 
   self.sites = Hex.Set:new()
   local hexes = Hex.Set:new(self.map:iter())
@@ -334,6 +276,13 @@ function Gen:make(cfg)
     local hex = starting_positions:pop_random()
     hex.terrain = string.format("%i %s", i, hex.terrain)
     self.units:add(hex)
+  end
+
+  for hex in self.map:iter() do
+    local label = hex:label()
+    if label then
+      table.insert(s, wml.tag.label(label))
+    end
   end
 
   s.map_data = self.map:as_map_data()
