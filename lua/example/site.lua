@@ -227,8 +227,6 @@ function Site.burial:wml(x, y)
   local location = wesnoth.map.read_location(x, y)
   local neighbourhood = wml.clone(location)
   neighbourhood.radius = 5
-  local spawn = self.spawn[mathx.random(#self.spawn)]
-  spawn.role = "burial"
 
   local current_spawn = {
     wml.tag.filter({
@@ -237,15 +235,20 @@ function Site.burial:wml(x, y)
     }),
     wml.tag["and"](wml.clone(neighbourhood))
   }
+  local spawn_args = {
+    side = self.biomes.swamp.side.side,
+    wml.tag.location(neighbourhood),
+  }
+  for spawn in iter(self.spawn) do
+    local s = wml.clone(spawn)
+    s.role = "burial"
+    table.insert(spawn_args, wml.tag.spawn(s))
+  end
   local lua = {
       code = [[ local Site = require("scenario_toolbox/lua/example/site_events")
                 Site.burial:new():spawn(...)
              ]],
-      wml.tag.args({
-        side = self.biomes.swamp.side.side,
-        wml.tag.location(neighbourhood),
-        wml.tag.spawn(spawn)
-      })
+      wml.tag.args(spawn_args)
   }
   local spawn_event = {
     name = string.format("side %i turn", self.biomes["swamp"].side.side),

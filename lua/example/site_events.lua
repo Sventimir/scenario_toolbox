@@ -16,9 +16,9 @@ function Site.burial:spawn(spec)
     wml.tag["and"](wml.get_child(spec, "location"))
   }
   local loc = Hex.Set:new(iter(wesnoth.map.find(filter)))
-  if loc.size > 0 then
-    local spawn_spec = wml.get_child(spec, "spawn")
-    local spawn = Spawn:new(wml.literal(spawn_spec))
+  if not loc:empty() then
+    local spawns = wml.child_array(spec, "spawn")
+    local spawn = Spawn:new(wml.literal(spawns[mathx.random(#spawns)]))
     spawn:spawn(loc:random(), spec.side)
   end
 end
