@@ -155,7 +155,7 @@ function Site.altar:wml(x, y)
           name = "die",
           id = boss_defeat_id,
           first_time_only = false,
-          wml.tag.filter({ id = spawn.id }),
+          wml.tag.filter({ id = unit.id }),
           wml.tag.remove_time_area({ id = time_area_id }),
           wml.tag.endlevel({ result = "victory" }),
           wml.tag.event({ id = boss_defeat_id, remove = true }),
