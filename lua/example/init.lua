@@ -121,6 +121,19 @@ wesnoth.game_events.add_menu(
 )
 
 wesnoth.game_events.add({
+    name = "attacker hits",
+    id = "enemy-hit",
+    first_time_only = false,
+    filter = {
+      wml.tag.filter({ side = players_str })
+    },
+    action = function(...)
+      -- Clear any micro AIs affecting the hit unit.
+      wml.variables.second_unit.role = ""
+    end
+})
+
+wesnoth.game_events.add({
     name = "die",
     id = "hero-defeated",
     first_time_only = false,
