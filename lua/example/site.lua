@@ -240,9 +240,7 @@ function Site.burial:wml(x, y)
     wml.tag.location(neighbourhood),
   }
   for spawn in iter(self.spawn) do
-    local s = wml.clone(spawn)
-    s.role = "burial"
-    table.insert(spawn_args, wml.tag.spawn(s))
+    table.insert(spawn_args, wml.tag.spawn(spawn))
   end
   local lua = {
       code = [[ local Site = require("scenario_toolbox/lua/example/site_events")
@@ -264,6 +262,19 @@ function Site.burial:wml(x, y)
     wml.tag.lua(lua)
   }
   table.insert(spec, wml.tag.event(spawn_event))
+
+  local micro_ai_setup = {
+    name = "start",
+    first_time_only = true,
+    wml.tag.micro_ai({
+        ai_type = "zone_guardian",
+        side = self.biomes.swamp.side.side,
+        action = "add",
+        wml.tag.filter({ role = "burial" }),
+        wml.tag.filter_location(neighbourhood),
+    })
+  }
+  table.insert(spec, wml.tag.event(micro_ai_setup))
 
   return spec
 end
