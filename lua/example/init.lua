@@ -8,6 +8,7 @@ Inventory = require("scenario_toolbox/lua/units/inventory")
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
 local meadows = wesnoth.sides.find({ team_name = "meadows" })[1]
+local forest = wesnoth.sides.find({ team_name = "forest" })[1]
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
 micro_ai = {
@@ -42,6 +43,14 @@ micro_ai = {
           side = players_str,
           canrecruit = true
       }),
+  }),
+  wml.tag.micro_ai({
+      ai_type = "lurkers",
+      side = forest.side,
+      action = "add",
+      wml.tag.filter({}),
+      wml.tag.filter_location({ area = "forest" }),
+      wml.tag.filter_location_wander({ area = "forest" })
   })
 }
 
@@ -187,6 +196,7 @@ wesnoth.game_events.add({
 
 function nightly_respawn(spec)
   local spawns = {}
+  local distance = spec.distance or 5
   for s in wml.child_range(spec, "spawn") do
     table.insert(spawns, Spawn:from_spec(wml.literal(s)))
   end
@@ -203,7 +213,7 @@ function nightly_respawn(spec)
       })
   })
   local hexset = Hex.Set:new(iter(hexes))
-  while hexset.size > 0 do
+  while not hexset:empty() do
     local s = spawns[mathx.random(#spawns)]
     local hex = Hex:from_wesnoth(hexset:random())
     hexset = hexset:diff(Hex.Set:new(hex:in_circle(5)))

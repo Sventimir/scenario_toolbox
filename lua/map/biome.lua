@@ -20,9 +20,10 @@ function Biome:new(spec, side)
     overlay = {},
     sites = {},
     spawn = {},
+    spawn_distance = spec.spawn_distance,
     hexes = Hex.Set:new(),
     side = side,
-    distance_from_center = Prob.Normal:from_wml(wml.get_child(spec, "distance_from_center"))
+    distance_from_center = Prob.Normal:from_wml(wml.get_child(spec, "distance_from_center")),
   }
 
   for ov in wml.child_range(spec, "overlay") do

@@ -155,13 +155,13 @@ function Gen:initial_spawn(biome, side)
   local available_hexes = Hex.Set:new(biome.hexes:iter())
 
   for h in self.units:iter() do
-    available_hexes = available_hexes:diff(Hex.Set:new(h:in_circle(5)))
+    available_hexes = available_hexes:diff(Hex.Set:new(h:in_circle(biome.spawn_distance)))
   end
 
   local function it()
     while available_hexes.size > 0 do
       local hex = available_hexes:pop_random()
-      available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(5)))
+      available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(biome.spawn_distance)))
       self.units:add(hex)
       local spawn = biome.spawn[mathx.random(#biome.spawn)]
       return spawn:wml(hex, side)
@@ -299,6 +299,7 @@ function Gen:make(cfg)
     local respawn_args = {
       area = biome.name,
       side = side.side,
+      distance = side.spawn_distance,
     }
     local biome_wml = wml.find_child(cfg, "biome", { name = biome.name })
     for spawn in wml.child_range(biome_wml, "spawn") do
