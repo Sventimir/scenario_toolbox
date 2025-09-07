@@ -9,7 +9,7 @@ function Hex:new(map, x, y, biome)
       map = map,
       x = x,
       y = y,
-      height = 0,
+      height = nil,
       terrain = ""
   }
   self.__index = self

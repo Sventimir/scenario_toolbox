@@ -1,4 +1,5 @@
 Hex = require("scenario_toolbox/lua/map/hex")
+Probability = require("scenario_toolbox/lua/lib/probability")
 
 local River = {}
 
@@ -35,6 +36,10 @@ function River:generate()
       hex = neighbours:pop_random()
     end
     self.bank = self.bank:union(neighbours)
+  end
+  local prob = Probability.Normal:new(1, 1)
+  for hex in self.bank:iter() do
+    hex.height = mathx.round(prob:sample(-1, 2))
   end
   self.river:add(self.spring)
 end

@@ -11,7 +11,7 @@ Vec = require("scenario_toolbox/lua/map/cubic_vector")
 
 
 local function hex_height(hex)
-  if hex then return hex.height else return nil end
+  if hex then return hex.height or 0 else return 0 end
 end
 
 Gen = {
@@ -20,17 +20,10 @@ Gen = {
   biome_centers = {},
 }
 
-function Gen:mean_height_around(hex)
-  return mathx.round(
-    arith.mean(filter_map(hex_height, hex:circle(1)))
-    or mathx.random(-2, 2)
-  )
-end
-
-function Gen:interior_height(hex)
-  local mean = arith.mean(filter_map(hex_height, hex:circle(1))) or 0
-  local roll = mathx.random(-1, 2)
-  hex.height = mathx.max(-2, mathx.min(2, mathx.round(mean + (roll / 2))))
+function Gen:interior_height(stddev, hex)
+  local mean = arith.mean(map(hex_height, hex:circle(1))) or 0
+  local roll = mean + stddev * Prob.Normal.canonic:sample_real()
+  hex.height = mathx.min(2, mathx.max(-2, mathx.round(roll)))
 end
 
 function Gen:river(hexsets)
@@ -68,11 +61,15 @@ function Gen:heightmap()
   self:river(hexsets)
   local dim = mathx.sqrt((self.map.width / 2) ^ 2 + (self.map.height / 2) ^ 2)
   local r = 3
+  local stddev = 0.7
   while r < dim do
     for hex in self.center:circle(r) do
-      if hex.height == 0 then
-        self:interior_height(hex)
+      if not hex.height then
+        self:interior_height(stddev, hex)
       end
+    end
+    if r == mathx.min(self.map.width, self.map.height) / 3 then
+      stddev = 2
     end
     r = r + 1
   end
@@ -233,7 +230,7 @@ function Gen:make(cfg)
   local overlayed = ov:apply(camp)
   hexes = hexes:diff(overlayed)
 
-  while hexes.size > 0 do
+  while not hexes:empty() do
     local hex = hexes:random()
     hex.terrain = hex.biome.terrain[hex.height]
     ov = Overlay.select(hex.biome.overlay, hex)

@@ -47,4 +47,6 @@ function Prob.Normal:sample_int(min, max)
   return mathx.round(self:sample(min, max))
 end
 
+Prob.Normal.canonic = Prob.Normal:new()
+
 return Prob
