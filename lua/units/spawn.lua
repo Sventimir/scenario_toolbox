@@ -43,7 +43,7 @@ function Spawn:spawn(hex, side)
   local us = {}
   for desc in self:placement(hex, side) do
     local u = wesnoth.units.create(desc)
-    u.x, u.y = wesnoth.paths.find_vacant_hex(hex.x, hex.y)
+    u.x, u.y = wesnoth.paths.find_vacant_hex(hex.x, hex.y, u)
     animation:add(u, "recruited", "")
     wesnoth.units.to_map(u)
     table.insert(us, u)
