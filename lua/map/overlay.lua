@@ -1,4 +1,5 @@
 local Prob = require("scenario_toolbox/lua/lib/probability")
+local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 local Overlay = {}
 
 function Overlay:new(props)
@@ -113,6 +114,58 @@ function Overlay.castle:apply(hex)
     castle:add(h)
   end
   return castle
+end
+
+Overlay.bridge = Overlay:new({ name = "bridge" })
+Overlay.bridge.directions = {
+  ["|"] = { Vec.unitary.n, Vec.unitary.s },
+  ["/"] = { Vec.unitary.sw, Vec.unitary.ne },
+  ["\\"] = { Vec.unitary.se, Vec.unitary.nw },
+}
+
+function Overlay.bridge:new(spec)
+  return Overlay.new(self, {
+    code = spec.code,
+    freq = spec.frequency,
+  })
+end
+
+function Overlay.bridge:is_land(hex)
+  if not hex then
+    return false
+  elseif hex.biome.name == "ocean" then
+    return hex.height == 2
+  else
+    return hex.height >= 0
+  end
+end
+
+function Overlay.bridge:applicable_directions(hex)
+  local applicable = {}
+  for symbol, vecs in pairs(self.directions) do
+    if all(function(v) return self:is_land(hex:translate(v)) end, iter(vecs)) then
+      table.insert(applicable, symbol)
+    end
+  end
+  return applicable
+end
+
+function Overlay.bridge:apply(hex)
+  local applicable = self:applicable_directions(hex)
+  local dir = applicable[mathx.random(#applicable)]
+  hex.terrain = string.format("%s^%s%s", hex.terrain, self.code, dir)
+  return Hex.Set:singleton(hex)
+end
+
+function Overlay.bridge:weigh(hex)
+  local applicable = not self:is_land(hex)
+    and count(filter(function(h) return not self:is_land(hex) end, hex:circle(1))) > 1
+    and #self:applicable_directions(hex) > 0
+  if applicable then
+    return self.freq
+  else
+    return 0
+  end
 end
 
 return Overlay
