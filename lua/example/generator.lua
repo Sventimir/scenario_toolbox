@@ -23,7 +23,18 @@ Gen = {
 function Gen:interior_height(stddev, hex)
   local mean = arith.mean(map(hex_height, hex:circle(1))) or 0
   local roll = mean + stddev * Prob.Normal.canonic:sample_real()
-  hex.height = mathx.min(2, mathx.max(-2, mathx.round(roll)))
+  hex.height = mathx.clamp(mathx.round(roll), -2, 2)
+end
+
+function Gen:gen_height(hex, ocean_chance, stddev)
+  local mean = arith.mean(map(hex_height, hex:circle(1))) or 0
+  local ocean_neighbours = count(filter(function(h) return hex.biome.name == "ocean" end, hex:circle(1)))
+  local is_ocean = ocean_neighbours >= 3 or (ocean_chance.num > 0 and ocean_chance:prob_check())
+  if is_ocean then
+    self.biomes.ocean:add_hex(hex)
+  end
+  local roll = mean + stddev * Prob.Normal.canonic:sample_real()
+  hex.height = mathx.clamp(mathx.round(roll), -2, 2)
 end
 
 function Gen:river(hexsets)
@@ -62,14 +73,16 @@ function Gen:heightmap()
   local dim = mathx.sqrt((self.map.width / 2) ^ 2 + (self.map.height / 2) ^ 2)
   local r = 3
   local stddev = 0.7
+  local ocean_chance = arith.Ratio:new(0, 1)
   while r < dim do
     for hex in self.center:circle(r) do
       if not hex.height then
-        self:interior_height(stddev, hex)
+        self:gen_height(hex, ocean_chance, stddev)
       end
     end
     if r == mathx.min(self.map.width, self.map.height) / 3 then
       stddev = 2
+      ocean_chance = arith.Ratio:new(mathx.round(mathx.lerp(0, 10, r / dim)), 10)
     end
     r = r + 1
   end

@@ -40,7 +40,7 @@ function Prob.Normal:sample_real()
 end
 
 function Prob.Normal:sample(min, max)
-  return mathx.min(max, mathx.max(min, self:sample_real()))
+  return mathx.clamp(self:sample_real(), min, max)
 end
 
 function Prob.Normal:sample_int(min, max)
