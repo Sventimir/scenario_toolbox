@@ -182,7 +182,7 @@ wesnoth.game_events.add({
       if side.variables.dead_leader then
         local anim = wesnoth.units.create_animator()
         local u = wesnoth.units.create(side.variables.dead_leader)
-        u.x, u.y = wesnoth.path.find_vacant_hex(side.starting_location.x, side.staring_location.y, u)
+        u.x, u.y = wesnoth.paths.find_vacant_hex(side.starting_location.x, side.staring_location.y, u)
         u.hitpoints = mathx.min(10, u.max_hitpoints)
         u.experience = u.experience / 2
         anim:add(u, "levelin", "")
