@@ -38,7 +38,7 @@ micro_ai = {
       ai_type = "assassin",
       side = meadows.side,
       action = "add",
-      wml.tag.filter({ type = "Wolf" }),
+      wml.tag.filter({ role = "raider" }),
       wml.tag.filter_second({
           side = players_str,
           canrecruit = true
