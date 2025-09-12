@@ -4,11 +4,32 @@ Spawn = require("scenario_toolbox/lua/units/spawn")
 Hex = require("scenario_toolbox/lua/map/hex")
 Item = require("scenario_toolbox/lua/item")
 Inventory = require("scenario_toolbox/lua/units/inventory")
+Objectives = require("scenario_toolbox/lua/example/objectives")
 
 local player_sides = wesnoth.sides.find({ team_name = "Bohaterowie" })
 local players_str = str.join(map(get("side"), iter(player_sides)), ",")
 local meadows = wesnoth.sides.find({ team_name = "meadows" })[1]
 local forest = wesnoth.sides.find({ team_name = "forest" })[1]
+local Shazza = {
+  nominative = "Shazza",
+  genetive = "Shazzy",
+  dative = "Shazzie",
+  accusative = "Shazzę",
+  ablative = "Shazzie",
+}
+local ShazzaTitle = {
+  nominative = "Przedwieczna",
+  genetive = "Przedwiecznej",
+  dative = "Przedwiecznej",
+  accusative = "Przedwieczną",
+}
+local meadows_name = {
+  nominative = "łąki",
+  gentive = "łąk",
+  dative = "łąkom",
+  accusative = "łąki",
+  ablative = "łąkach",
+}
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
 micro_ai = {
@@ -54,38 +75,17 @@ micro_ai = {
   })
 }
 
-local objectives = {
-  wml.tag.objectives({
-      team_name = "Bohaterowie",
-      summary = "Odnajdź i pokonaj Przedwieczną Shazzę.",
-      wml.tag.objective({
-          condition = "win",
-          description = "Odnajdź ołtarz przywołania Przedwiecznej.",
-      }),
-      wml.tag.objective({
-          condition = "win",
-          description = "Zdobądź ofiarę konieczną do przywołania.",
-      }),
-      wml.tag.objective({
-          condition = "win",
-          description = "Pokonaj Przedwieczną.",
-      }),
-      wml.tag.note({
-          description = "Ołtarz znajduje się gdzieś na łąkach wyspy.",
-      }),
-      wml.tag.note({
-          description = "Wskazówkę co do wymaganej ofiary można znaleźć przy ołtarzu przedwiecznego.",
-      }),
-      wml.tag.note({
-          description = "Specjalne lokacje zawierają opisy. Podejdź do nich dowoną jednostką i kliknij prawym przyciskiem aby się im przyjrzeć."
-      }),
-  })
-}
-
 wesnoth.game_events.add({
     name = "start",
     id = "setup_micro_ai",
-    content = wml.merge(micro_ai, objectives)
+    content = wml.merge(
+      micro_ai,
+      {
+        wml.tag.objectives(
+          Objectives:wml(Shazza, ShazzaTitle, meadows_name)
+        )
+      }
+    )
 })
 
 wesnoth.game_events.add({
