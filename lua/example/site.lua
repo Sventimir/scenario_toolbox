@@ -1,6 +1,6 @@
 Hex = require("scenario_toolbox/lua/map/hex")
 Inventory = require("scenario_toolbox/lua/units/inventory")
-Objectives = require("scenario_toolbox/lua/units/objectives")
+Objectives = require("scenario_toolbox/lua/example/objectives")
 Prob = require("scenario_toolbox/lua/lib/probability")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
@@ -67,7 +67,6 @@ function Site.altar:new(spec, biome)
   alt.spawn = wml.get_child(spec, "spawn")
   alt.boss = wml.get_child(spec, "boss")
   alt.boss_id = string.format("%s-boss", alt.biome.name)
-  alt.next_altar_biome = spec.next
   
   local boss_title = wml.get_child(alt.boss, "title")
   alt.variables.title = string.format("Ołtarz %s", boss_title.genetive)
@@ -77,13 +76,20 @@ function Site.altar:new(spec, biome)
 end
 
 function Site.altar:boss_defeated_action()
-  if self.next_altar_biome then
+  local next_altar = wml.get_child(self.boss, "next_altar")
+  if next_altar then
     return {
       wml.tag.set_variable({
           name = "active",
-          value = self.next_altar_biome
+          value = next_altar.biome
       }),
-      wml.tag.objectives(Objectives:wml())
+      wml.tag.objectives(
+        Objectives:wml(
+          wml.get_child(next_altar, "name"),
+          wml.get_child(next_altar, "title"),
+          wml.get_child(next_altar, "biome")
+        )
+      )
     }
   else
     return { wml.tag.endlevel({ result = "victory" }) }

@@ -27,7 +27,7 @@ function Objectives:wml(boss_name, boss_title, biome)
         )
     }),
     wml.tag.note({
-        description = string.format("Ołtarz znajduje się gdzieś na %s wyspy.", biome.ablative),
+        description = string.format("Ołtarz znajduje się gdzieś wśród %s wyspy.", biome.genetive),
     }),
     wml.tag.note({
         description = string.format(
