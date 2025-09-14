@@ -78,8 +78,17 @@ function Overlay.village:weigh(hex)
   if hex.height < 0 or hex.height > 1 then
     return 0
   else
-    local nearby_villages = filter(Hex.has_village, hex:in_circle(self.min_dist))
-    return self.base_freq - count(nearby_villages)
+    local nearby_villages = filter_map(
+      function(h)
+        if h:has_village() then
+          return h:distance(hex)
+        else
+          return 0
+        end
+      end,
+      hex:in_circle(self.min_dist)
+    )
+    return self.base_freq - fold(arith.add, 0, nearby_villages)
   end
 end
 
