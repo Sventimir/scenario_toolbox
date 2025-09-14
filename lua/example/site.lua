@@ -1,5 +1,6 @@
 Hex = require("scenario_toolbox/lua/map/hex")
 Inventory = require("scenario_toolbox/lua/units/inventory")
+Objectives = require("scenario_toolbox/lua/units/objectives")
 Prob = require("scenario_toolbox/lua/lib/probability")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 
@@ -59,9 +60,6 @@ setmetatable(Site.altar, { __index = Site })
 function Site.altar:new(spec, biome)
   local alt = Site.new(self)
   alt.biome = biome
-  alt.variables.title = "Ołtarz Przedwiecznego"
-  alt.variables.description = spec.description
-
   local dist = wml.get_child(spec, "distance_from_origin")
   alt.distance = Prob.Normal:new(dist.mean, dist.standard_deviation)
   alt.min_dist = dist.minimum or 1
@@ -69,7 +67,27 @@ function Site.altar:new(spec, biome)
   alt.spawn = wml.get_child(spec, "spawn")
   alt.boss = wml.get_child(spec, "boss")
   alt.boss_id = string.format("%s-boss", alt.biome.name)
+  alt.next_altar_biome = spec.next
+  
+  local boss_title = wml.get_child(alt.boss, "title")
+  alt.variables.title = string.format("Ołtarz %s", boss_title.genetive)
+  alt.variables.description = spec.description
+
   return alt
+end
+
+function Site.altar:boss_defeated_action()
+  if self.next_altar_biome then
+    return {
+      wml.tag.set_variable({
+          name = "active",
+          value = self.next_altar_biome
+      }),
+      wml.tag.objectives(Objectives:wml())
+    }
+  else
+    return { wml.tag.endlevel({ result = "victory" }) }
+  end
 end
 
 function Site.altar:wml(x, y)
@@ -108,9 +126,10 @@ function Site.altar:wml(x, y)
         requirement.quantity
       )
     end
+    local boss_title = wml.get_child(self.boss, "title")
     local boss_menu = {
       id = string.format("%s-summon-menu", self.biome.name),
-      description = "Przywołanie Przedwiecznego",
+      description = string.format("Przywołanie %s", boss_title.genetive),
     }
     local filter = {
       x = location.x, y = location.y,
@@ -141,7 +160,7 @@ function Site.altar:wml(x, y)
           id = time_area_id,
           x = "$x1", y = "$y1", radius = 3,
           wml.tag.time({
-              name = "Aura Przedwiecznego",
+              name = string.format("Aura %s", boss_title.genetive),
               description = "Wokół Przedwiecznej Istoty panuje ciemność i burza z piorunami.",
               image = "misc/time-schedules/schedule-midnight.png",
               lawful_bonus = -25,
@@ -151,19 +170,23 @@ function Site.altar:wml(x, y)
           })
       }),
       wml.tag.spawn(spawn),
-      wml.tag.event({
+      wml.tag.event(
+        wml.merge({
           name = "die",
           id = boss_defeat_id,
           first_time_only = false,
           wml.tag.filter({ id = unit.id }),
           wml.tag.remove_time_area({ id = time_area_id }),
-          wml.tag.endlevel({ result = "victory" }),
           wml.tag.event({ id = boss_defeat_id, remove = true }),
-      })
+        },
+          self:boss_defeated_action(),
+          "append"
+        )
+      )
     }
-    if self.biome.name == "meadows" then
+    if self.boss.dialogue then
       local d = {
-        filename = "scenario_toolbox/lua/example/dialogues/shazza",
+        filename = self.boss.dialogue,
         player_sides = cfg.player_sides
       }
       table.insert(cmd, wml.tag.dialogue(d))
