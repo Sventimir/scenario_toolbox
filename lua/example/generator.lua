@@ -43,12 +43,12 @@ function Gen:river(hexsets)
       return dist > 7 and dist < 11
   end)
   local river = River:new(potential_springs, hexsets.border)
-  river:generate()
+  river:generate(hexsets.interior)
 end
 
 function Gen:heightmap()
   hexes = Hex.Set:new(self.map:iter())
-  self.center = self.map:get(self.map.height / 2, self.map.width / 2)
+  self.center = hexes:remove(self.map.height / 2, self.map.width / 2)
 
   for hex in self.center:in_circle(2) do
     hex.height = 0
@@ -69,7 +69,6 @@ function Gen:heightmap()
     self.biomes.ocean:add_hex(hex)
   end
 
-  self:river(hexsets)
   local dim = mathx.sqrt((self.map.width / 2) ^ 2 + (self.map.height / 2) ^ 2)
   local r = 3
   local stddev = 0.7
@@ -81,7 +80,7 @@ function Gen:heightmap()
       end
     end
     if r == mathx.min(self.map.width, self.map.height) / 3 then
-      stddev = 2
+      stddev = 1.5
       ocean_chance = arith.Ratio:new(mathx.round(mathx.lerp(0, 10, r / dim)), 10)
     end
     r = r + 1

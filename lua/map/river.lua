@@ -15,7 +15,7 @@ function River:new(hexes, ocean)
   return setmetatable(river, { __index = self })
 end
 
-function River:generate()
+function River:generate(available_hexes)
   local hex = self.bank:pop_random()
   for h in self.bank:iter() do
     h.height = 2
@@ -25,7 +25,10 @@ function River:generate()
     hex.height = -1
     local neighbours = Hex.Set:new(
       filter(
-        function(h) return not (self.river:member(h) or self.bank:member(h)) end,
+        function(h)
+          return available_hexes:member(h)
+            and not (self.river:member(h) or self.bank:member(h))
+        end,
         hex:circle(1)
       )
     )

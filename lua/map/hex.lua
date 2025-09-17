@@ -112,6 +112,10 @@ function Hex:has_village()
   return string.find(self.terrain, "%^V")
 end
 
+function Hex:is_water()
+  return string.find(self.terrain, "^W") or string.find(self.terrain, "^Ss")
+end
+
 function Hex:is_keep()
   return string.find(self.terrain, "^K")
 end
@@ -158,12 +162,13 @@ function Hex.Set:add(hex)
   end
 end
 
-function Hex.Set:remove(hex)
+function Hex.Set:remove(...)
+  local hex = wesnoth.map.read_location(...)
   if self[hex.y] then
-    if self[hex.y][hex.x] then
-      self.size = self.size - 1
-    end
+    local h = self[hex.y][hex.x]
+    if h then self.size = self.size - 1 end
     self[hex.y][hex.x] = nil
+    return h
   end
 end
 
