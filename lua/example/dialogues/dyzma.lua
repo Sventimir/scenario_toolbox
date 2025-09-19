@@ -16,3 +16,5 @@ function Dyzma:new(spec)
   d:add(Dialogue.Line:new(fst, "Za długo już nie pożyjesz, Bratku."))
   d:add(Dialogue.Line:new(dyzma, "No tak to już dawno mnie nie obrażono. Czy ja wyglądam jak kwiat? Zginiecie za to!"))
 end
+
+return Dyzma
