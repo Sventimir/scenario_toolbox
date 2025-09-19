@@ -140,13 +140,7 @@ function Overlay.bridge:new(spec)
 end
 
 function Overlay.bridge:is_land(hex)
-  if not hex then
-    return false
-  elseif hex.biome.name == "ocean" then
-    return hex.height == 2
-  else
-    return hex.height >= 0
-  end
+  return hex and not hex:is_water()
 end
 
 function Overlay.bridge:applicable_directions(hex)

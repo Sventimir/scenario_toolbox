@@ -56,6 +56,14 @@ function Hex:in_circle(radius)
   return chain(iter({ self }), join(map(function(r) return self:circle(r) end, take(radius, arith.nats()))))
 end
 
+function Hex:get_terrain()
+  if self.terrain == "" then
+    return self.biome.terrain[self.height]
+  else
+    return self.terrain
+  end
+end
+
 function Hex:show()
   return self.terrain
 end
@@ -101,27 +109,27 @@ function Hex:is_border()
 end
 
 function Hex:has_overlay()
-  return string.find(self.terrain, "%^")
+  return string.find(self:get_terrain(), "%^")
 end
 
 function Hex:has_forest()
-  return string.find(self.terrain, "%^F")
+  return string.find(self:get_terrain(), "%^F")
 end
 
 function Hex:has_village()
-  return string.find(self.terrain, "%^V")
+  return string.find(self:get_terrain(), "%^V")
 end
 
 function Hex:is_water()
-  return string.find(self.terrain, "^W") or string.find(self.terrain, "^Ss")
+  return string.find(self:get_terrain(), "^W") or string.find(self.terrain, "^Ss")
 end
 
 function Hex:is_keep()
-  return string.find(self.terrain, "^K")
+  return string.find(self:get_terrain(), "^K")
 end
 
 function Hex:is_castle()
-  return string.find(self.terrain, "^C")
+  return string.find(self:get_terrain(), "^C")
 end
 
 Hex.Set = {}
