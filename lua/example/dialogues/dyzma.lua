@@ -1,4 +1,4 @@
-local Dialogue = reqwuire("scenario_toolbox/lua/events/dialogue")
+local Dialogue = require("scenario_toolbox/lua/events/dialogue")
 
 Dyzma = {}
 
