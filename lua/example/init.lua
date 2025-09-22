@@ -129,6 +129,16 @@ wesnoth.game_events.add_menu(
     end
 )
 
+wesnoth.game_events.add_menu(
+  "inventory_menu",
+  function()
+    local u = wesnoth.units.find({ x = wml.variables.x1, y = wml.variables.y1 })[1]
+    local i = Inventory:get(u)
+    i:display()
+    i:save()
+  end
+)
+
 wesnoth.game_events.add({
     name = "attacker hits",
     id = "enemy-hit",

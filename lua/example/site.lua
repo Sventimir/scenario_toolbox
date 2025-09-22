@@ -158,9 +158,10 @@ function Site.altar:wml(x, y)
       }),
       wml.tag.inventory({
           wml.tag.filter(unit_filter),
-          action = "remove",
-          item = "bones",
-          quantity = 1,
+          wml.tag.remove({
+              item = "bones",
+              quantity = 1,
+          }),
       }),
       wml.tag.time_area({
           id = time_area_id,
