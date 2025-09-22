@@ -168,21 +168,6 @@ wesnoth.game_events.add({
 })
 
 wesnoth.game_events.add({
-    name = "die",
-    id = "skeleton-defeated",
-    first_time_only = false,
-    filter = {
-      unit = { type = [[ Skeleton,Skeleton Archer,Skeleton Rider,Skeletal Dragon,
-                         Revenant,Lich,Draug,Deathblade,Death Squire,Death Knight,
-                         Chocobone,Bone Shooter,Bone Knight,Banebow,Ancient Lich ]] },
-      second_unit = { side = players_str },
-    },
-    action = function()
-      Item.bones:drop(wml.variables.unit)
-    end
-})
-
-wesnoth.game_events.add({
     name = "side turn",
     id = "player-turn-start",
     first_time_only = false,

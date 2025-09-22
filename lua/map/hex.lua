@@ -192,17 +192,14 @@ function Hex.Set:pop_random()
 end
 
 function Hex.Set:get(x, y)
-  if self[y] then
-    return self[y][x]
+  local loc = wesnoth.map.read_location(x, y)
+  if self[loc.y] then
+    return self[loc.y][loc.x]
   end
 end
 
-function Hex.Set:member(hex)
-  if self[hex.y] then
-    return self[hex.y][hex.x] and true or false
-  else
-    return false
-  end
+function Hex.Set:member(x, y)
+  return self:get(x, y) and true or false
 end
 
 function Hex.Set:as_area()
@@ -275,6 +272,22 @@ function Hex.Set:partition(f)
     results[key]:add(hex)
   end
   return results
+end
+
+function Hex.Set:wml(tag)
+  local contents = {}
+  for hex in self:iter() do
+    table.insert(contents, wml.tag[tag or "hex"](hex))
+  end
+  return contents
+end
+
+function Hex.Set:from_wml(spec)
+  local hset = self:new()
+  for tag in iter(spec) do
+    hset:add(tag[2])
+  end
+  return hset
 end
 
 return Hex
