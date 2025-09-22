@@ -156,13 +156,6 @@ function Site.altar:wml(x, y)
           variable = "summoner",
           wml.tag.filter(unit_filter),
       }),
-      wml.tag.inventory({
-          wml.tag.filter(unit_filter),
-          wml.tag.remove({
-              item = "bones",
-              quantity = 1,
-          }),
-      }),
       wml.tag.time_area({
           id = time_area_id,
           x = "$x1", y = "$y1", radius = 3,
@@ -191,6 +184,16 @@ function Site.altar:wml(x, y)
         )
       )
     }
+    if requirement then
+      local offering = {
+        wml.tag.filter(unit_filter),
+        wml.tag.remove({
+            item = requirement.item,
+            quantity = requirement.quantity,
+        }),
+      }
+      table.insert(cmd, wml.tag.inventory(offering))
+    end
     if self.boss.dialogue then
       local d = {
         filename = self.boss.dialogue,
