@@ -25,7 +25,7 @@ local ShazzaTitle = {
 }
 local meadows_name = {
   nominative = "łąki",
-  gentive = "łąk",
+  genetive = "łąk",
   dative = "łąkom",
   accusative = "łąki",
   ablative = "łąkach",
