@@ -66,29 +66,40 @@ function Inventory:iter()
 end
 
 function Inventory:display()
-  local choice = {}
+  local choice = { choices = {} }
   wesnoth.sync.evaluate_single(function()
       choice.action = gui.show_dialog(
         self.gui_wml,
-        function(w) return self:predisplay(w) end,
+        function(w) return self:predisplay(w, choice) end,
         function(w) return self:postdisplay(w, choice) end
       )
   end)
-  -- execute the chosen action here
+  if self.actions[choice.action] and choice.item then
+    self.actions[choice.action](self, choice.item)
+  end
 end
 
-function Inventory:predisplay(widget)
+function Inventory:predisplay(widget, choice)
   widget.title.label = string.format("%s - ekwipunek postaci", self.unit.name)
-  for _, item in pairs(self.contents) do
+  for item in self:iter() do
     local entry = widget.inventory_list:add_item()
+    table.insert(choice.choices, item)
     entry.item_name.label = item.display
     entry.item_quantity.label = tostring(item:with_quantity())
   end
 end
 
 function Inventory:postdisplay(widget, choice)
-  choice.item = widget.inventory_list.selected_index
+  choice.item = choice.choices[widget.inventory_list.selected_index]
 end
+
+Inventory.actions = {
+  [1] = function(self, item) end,
+  [2] = function(self, item)
+    item:place(self.unit)
+    self:remove(item)
+  end,
+}
 
 Inventory.formula = {}
 
