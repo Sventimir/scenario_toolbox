@@ -42,11 +42,15 @@ end
 
 function Inventory:remove(item, quantity)
   local i = self:find(item)
-  local qty = i:with_quantity(-(quantity or i.quantity or 1))
-  if qty == 0 then
-    self.contents[i.name] = nil
+  if i then
+    local qty = i:with_quantity(-(quantity or i.quantity or 1))
+    if qty == 0 then
+      self.contents[i.name] = nil
+    end
+    return qty
+  else
+    error("Cannot remove - item not in inventory!")
   end
-  return qty
 end
 
 function Inventory:save()
@@ -92,6 +96,10 @@ function Inventory:predisplay(widget, choice)
     entry.item_image.label = item.image
     entry.item_name.label = item.display
     entry.item_quantity.label = tostring(item:with_quantity())
+    local consume = wml.get_child(item, "consume")
+    if consume then
+      entry.item_consumption.label = consume.description
+    end
   end
 end
 
@@ -100,7 +108,23 @@ function Inventory:postdisplay(widget, choice)
 end
 
 Inventory.actions = {
-  [1] = function(self, item) end,
+  [1] = function(self, item)
+    local consume = wml.get_child(item, "consume")
+    if consume then
+      wml.variables.unit = self.unit.__cfg
+      for action in iter(consume) do
+        wesnoth.wml_actions[action[1]](action[2])
+      end
+      self:remove(item, 1)
+      wml.variables.unit = nil
+    else
+      gui.show_narration({
+          portrait = self.unit.portrait,
+          title = self.unit.name,
+          message = "A co ja niby mam z tym zrobić?",
+  })
+    end
+  end,
   [2] = function(self, item)
     item:place(self.unit)
     self:remove(item)
