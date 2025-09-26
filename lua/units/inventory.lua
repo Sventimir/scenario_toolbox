@@ -84,6 +84,7 @@ function Inventory:predisplay(widget, choice)
   for item in self:iter() do
     local entry = widget.inventory_list:add_item()
     table.insert(choice.choices, item)
+    entry.item_image.label = item.image
     entry.item_name.label = item.display
     entry.item_quantity.label = tostring(item:with_quantity())
   end
