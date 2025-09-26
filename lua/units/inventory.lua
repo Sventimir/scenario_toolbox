@@ -27,7 +27,12 @@ function Inventory:find(item)
 end
 
 function Inventory:add(item)
-  self.contents[item.name] = self.Item:new(item)
+  local it = self:find(item)
+  if it then
+    it:with_quantity(1)
+  else
+    self.contents[item.name] = self.Item:new(item)
+  end
 end
 
 function Inventory:quantity(item)
@@ -37,7 +42,7 @@ end
 
 function Inventory:remove(item, quantity)
   local i = self:find(item)
-  local qty = i:with_quantity(-(quantity or 1))
+  local qty = i:with_quantity(-(quantity or i.quantity or 1))
   if qty == 0 then
     self.contents[i.name] = nil
   end
