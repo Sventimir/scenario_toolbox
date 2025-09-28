@@ -1,3 +1,4 @@
+local Prob = require("scenario_toolbox/lua/lib/probability")
 local Hex = require("scenario_toolbox/lua/map/hex")
 
 local Inventory = {}
@@ -13,7 +14,7 @@ function Inventory:new(items)
 end
 
 function Inventory:get(unit)
-  local inv = self:new(wml.child_array(unit.variables.inventory or {}, "item"))
+  local inv = self:new(wml.child_array(unit.variables and unit.variables.inventory or {}, "item"))
   inv.unit = unit
   return inv
 end
@@ -55,13 +56,14 @@ end
 
 function Inventory:save()
   local inv = {}
-  for item in self:iter() do
+  for item in filter(function(i) return i.quantity > 0 end, self:iter()) do
     -- if item was picked up from the map, it has a location - we need to remove it.
     item.x = nil
     item.y = nil
     table.insert(inv, item)
   end
-    wml.array_access.set("inventory.item", inv, self.unit)
+  Debug:activate()
+  Debug:catch(wml.array_access.set, "inventory.item", inv, self.unit)
 end
 
 -- For synchronization's sake it is important that the order of iteration is consistent
@@ -157,7 +159,15 @@ Inventory.Item = {
 }
 
 function Inventory.Item:new(spec)
-  return setmetatable(spec, { __index = self })
+  local it = setmetatable(spec, { __index = self })
+  if it.quantity_stddev then
+    local prob = Prob.Normal:new(it.quantity or 1, it.quantity_stddev)
+    it.quantity = mathx.round(prob:sample_real())
+    it.quantity_stddev = nil
+  else
+    it.quantity = mathx.round(it.quantity or 1)
+  end
+  return it
 end
 
 function Inventory.Item:from_map(x, y)
@@ -194,7 +204,7 @@ function Inventory.Item:map_wml()
 end
 
 function Inventory.Item:with_quantity(increment)
-  self.quantity = (self.quantity or 1) + (increment or 0)
+  self.quantity = mathx.round(self.quantity + (increment or 0))
   if self.quantity < 0 then
     error("Cannot decrease item's quantity - not enough!")
   else
@@ -223,6 +233,19 @@ if wesnoth.wml_actions then -- only available at runtime
       end
     end
   end
+
+  -- Store the original
+  Inventory.original_unit_wml_action = wesnoth.wml_actions.unit
+
+  -- After having created a unit, make sure its inventory gets processed,
+  -- validated and saved.
+  function wesnoth.wml_actions.unit(spec)
+    Inventory.original_unit_wml_action(spec)
+    local filter = (spec.x and spec.y) and { x = spec.x, y = spec.y } or { x = "recall", y = "recall" }
+    local u = wesnoth.units.find(filter)[1]
+    local inv = Inventory:get(u)
+    inv:save()
+  end
 end
 
 if wesnoth.game_events then -- only available at runtime
@@ -244,6 +267,19 @@ if wesnoth.game_events then -- only available at runtime
                     show = true
                 })
             })
+        })
+      }
+  })
+
+  -- For each unit on the map, load it's inventory and save it. This is to make
+  -- sure that each unit's inventory gets processed and validated.
+  wesnoth.game_events.add({
+      name = "start",
+      id = "process_inventories",
+      content = {
+        wml.tag.inventory({
+            wml.tag.filter({}), -- all units
+            show = false,
         })
       }
   })
