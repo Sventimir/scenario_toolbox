@@ -298,24 +298,30 @@ if wesnoth.game_events then -- only available at runtime
       end
   })
 
-  wesnoth.game_events.add_repeating(
-    "moveto",
-    function()
-      local loc = wesnoth.map.read_location(wml.variables.x1, wml.variables.y1)
-      local inv = Inventory:get(wesnoth.units.find(loc)[1])
-      local anything = false
-      for it in Inventory.Item:from_map(loc) do
-        anything = true
-        inv:add(it)
+  wesnoth.game_events.add({
+      name = "moveto",
+      id = "inventory-pickup",
+      first_time_only = false,
+      filter = function()
+        local items = wesnoth.interface.get_items(wml.variables.x1, wml.variables.y1)
+        local u = wesnoth.units.find({ x = wml.variables.x1, y = wml.variables.y1 })[1]
+        return #items > 0 and wesnoth.sides[u.side].controller == "human" or false
+      end,
+      action = function()
+        local loc = wesnoth.map.read_location(wml.variables.x1, wml.variables.y1)
+        local inv = Inventory:get(wesnoth.units.find(loc)[1])
+        local anything = false
+        for it in Inventory.Item:from_map(loc) do
+          anything = true
+          inv:add(it)
+        end
+        if anything then
+          inv:save()
+          wesnoth.wml_actions.remove_item(loc)
+          inv:display()
+        end
       end
-      if anything then
-        inv:save()
-        wesnoth.wml_actions.remove_item(loc)
-        inv:display()
-      end
-    end,
-    10
-  )
+  })
 end
 
 return Inventory
