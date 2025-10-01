@@ -30,7 +30,7 @@ end
 function Inventory:add(item)
   local it = self:find(item)
   if it then
-    it:with_quantity(1)
+    it:with_quantity(item.quantity or 1)
   else
     self.contents[item.name] = self.Item:new(item)
   end
@@ -130,6 +130,7 @@ Inventory.actions = {
   [2] = function(self, item)
     item:place(self.unit)
     self:remove(item)
+    self:save()
   end,
 }
 
