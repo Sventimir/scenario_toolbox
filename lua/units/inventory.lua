@@ -5,16 +5,17 @@ local Inventory = {}
 
 Inventory.gui_wml = wml.load("~/add-ons/scenario_toolbox/gui/inventory.cfg")
 
-function Inventory:new(items)
+function Inventory:new(spec)
   local inv = setmetatable({ contents = {} }, { __index = self })
-  for i in iter(items) do
+  inv.equipped = wml.get_child(spec, "equipped") or {}
+  for i in wml.child_range(spec, "item") do
     inv:add(i)
   end
   return inv
 end
 
 function Inventory:get(unit)
-  local inv = self:new(wml.child_array(unit.variables and unit.variables.inventory or {}, "item"))
+  local inv = self:new(unit.variables and unit.variables.inventory or {})
   inv.unit = unit
   return inv
 end
@@ -46,6 +47,13 @@ function Inventory:remove(item, quantity)
   if i then
     local qty = i:with_quantity(-(quantity or i.quantity or 1))
     if qty == 0 then
+      local equip = wml.get_child(i, "equip")
+      if equip then
+        wesnoth.wml_actions.remove_object({
+            id = self.unit.id,
+            object_id = equip.id
+        })
+      end
       self.contents[i.name] = nil
     end
     return qty
@@ -55,15 +63,14 @@ function Inventory:remove(item, quantity)
 end
 
 function Inventory:save()
-  local inv = {}
+  local inv = { }
   for item in filter(function(i) return i.quantity > 0 end, self:iter()) do
     -- if item was picked up from the map, it has a location - we need to remove it.
     item.x = nil
     item.y = nil
     table.insert(inv, item)
   end
-  Debug:activate()
-  Debug:catch(wml.array_access.set, "inventory.item", inv, self.unit)
+  wml.array_access.set("inventory.item", inv, self.unit)
 end
 
 -- For synchronization's sake it is important that the order of iteration is consistent
@@ -88,6 +95,7 @@ function Inventory:display()
   if self.actions[choice.action] and choice.item then
     self.actions[choice.action](self, choice.item)
   end
+  self:save()
 end
 
 function Inventory:predisplay(widget, choice)
@@ -98,9 +106,9 @@ function Inventory:predisplay(widget, choice)
     entry.item_image.label = item.image
     entry.item_name.label = item.display
     entry.item_quantity.label = tostring(item:with_quantity())
-    local consume = wml.get_child(item, "consume")
-    if consume then
-      entry.item_consumption.label = consume.description
+    local usage = wml.get_child(item, "consume") or wml.get_child(item, "equip")
+    if usage then
+      entry.item_consumption.label = usage.description
     end
   end
 end
@@ -112,25 +120,36 @@ end
 Inventory.actions = {
   [1] = function(self, item)
     local consume = wml.get_child(item, "consume")
+    local equip = wml.get_child(item, "equip")
+    wml.variables.unit = self.unit.__cfg
     if consume then
-      wml.variables.unit = self.unit.__cfg
       for action in iter(consume) do
         wesnoth.wml_actions[action[1]](action[2])
       end
       self:remove(item, 1)
-      wml.variables.unit = nil
+    elseif equip then
+      wesnoth.wml_actions.remove_object({
+          id = wml.variables.unit.id,
+          object_id = equip.id
+      })
+      local spec = wml.clone(equip)
+      spec.id = string.format(
+        "%s-%s-%i", equip.id, wml.variables.unit.id, wml.variables.turn_number
+      )
+      -- self.equipped.equip.id = spec.id
+      wesnoth.wml_actions.object(spec)
     else
       gui.show_narration({
-          portrait = self.unit.portrait,
-          title = self.unit.name,
+          portrait = wml.variables.unit.portrait,
+          title = wml.variables.unit.name,
           message = "A co ja niby mam z tym zrobić?",
-  })
+      })
     end
+    wml.variables.unit = nil
   end,
   [2] = function(self, item)
     item:place(self.unit)
     self:remove(item)
-    self:save()
   end,
 }
 
