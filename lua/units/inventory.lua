@@ -140,7 +140,7 @@ Inventory.actions = {
       wesnoth.wml_actions.object(spec)
     else
       gui.show_narration({
-          portrait = wml.variables.unit.portrait,
+          portrait = wml.variables.unit.profile,
           title = wml.variables.unit.name,
           message = "A co ja niby mam z tym zrobić?",
       })
@@ -234,6 +234,7 @@ end
 
 function Inventory.Item:place(x, y)
   local loc = wesnoth.map.read_location(x, y)
+  loc.delayed_variable_substitution = true
   wesnoth.wml_actions.item(wml.merge(self:map_wml(), loc))
 end
 
