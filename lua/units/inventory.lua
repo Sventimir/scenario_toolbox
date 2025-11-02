@@ -134,9 +134,8 @@ Inventory.actions = {
       })
       local spec = wml.clone(equip)
       spec.id = string.format(
-        "%s-%s-%i", equip.id, wml.variables.unit.id, wml.variables.turn_number
+        "%s%s%i", equip.id, wml.variables.unit.id, wml.variables.turn_number
       )
-      -- self.equipped.equip.id = spec.id
       wesnoth.wml_actions.object(spec)
     else
       gui.show_narration({
