@@ -6,7 +6,7 @@ function Dyzma:new(spec)
   local dyzma = wesnoth.units.find({ id = "forest-boss"})[1]
   local fst = wesnoth.units.find({ id = wml.variables.summoner.id })[1]
   local snd = wesnoth.units.find({ side = spec.player_sides, wml.tag["not"]({ id = fst.id })})[1]
-  local side_numbers = string.split(spec.player_sides, ",")
+  local side_numbers = str.split(spec.player_sides, ",")
   local panzer = wesnoth.units.create({
       type = "Heavy Infantryman",
       side = side_numbers[mathx.random(#player_sides)],
