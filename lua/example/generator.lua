@@ -1,5 +1,4 @@
 Biome = require("scenario_toolbox/lua/map/biome")
-CartVec = require("scenario_toolbox/lua/map/carthesian_vector")
 Hex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
 Overlay = require("scenario_toolbox/lua/map/overlay")
@@ -10,20 +9,14 @@ Spawn = require("scenario_toolbox/lua/units/spawn")
 Vec = require("scenario_toolbox/lua/map/cubic_vector")
 
 
-local function hex_height(hex)
-  if hex then return hex.height or 0 else return 0 end
-end
-
 Gen = {
   side_color = { "red", "blue", "purple" },
   biomes = {},
   biome_centers = {},
 }
 
-function Gen:interior_height(stddev, hex)
-  local mean = arith.mean(map(hex_height, hex:circle(1))) or 0
-  local roll = mean + stddev * Prob.Normal.canonic:sample_real()
-  hex.height = mathx.clamp(mathx.round(roll), -2, 2)
+local function hex_height(hex)
+  if hex then return hex.height or 0 else return 0 end
 end
 
 function Gen:gen_height(hex, ocean_chance, stddev)
@@ -37,15 +30,6 @@ function Gen:gen_height(hex, ocean_chance, stddev)
   hex.height = mathx.clamp(mathx.round(roll), -2, 2)
 end
 
-function Gen:river(hexsets)
-  local potential_springs = hexsets.interior:filter(function(h)
-      local dist = h:distance(self.center)
-      return dist > 7 and dist < 11
-  end)
-  local river = River:new(potential_springs, hexsets.border)
-  river:generate(hexsets.interior)
-end
-
 function Gen:heightmap()
   hexes = Hex.Set:new(self.map:iter())
   self.center = hexes:remove(self.map.height / 2, self.map.width / 2)
@@ -56,15 +40,9 @@ function Gen:heightmap()
     hexes:remove(hex)
   end
 
-  local hexsets = hexes:partition(function(h)
-      if mathx.min(h.x, h.y, self.map.width - h.x, self.map.height - h.y) > 3 then
-        return "interior"
-      else
-        return "border"
-      end
-  end)
-  for hex in hexsets.border:iter() do
-    local border_dist = mathx.min(hex.x, hex.y, self.map.width - hex.x, self.map.height - hex.y)
+  local border = hexes:filter(function(h) return h:border_distance() < 3 end)
+  for hex in border:iter() do
+    local border_dist = hex:border_distance()
     hex.height = mathx.round(mathx.random(0, border_dist) / 3) - 2
     self.biomes.ocean:add_hex(hex)
   end
@@ -181,7 +159,7 @@ function Gen:initial_spawn(biome, side)
 end
 
 function Gen:make(cfg)
-  local s = wml.get_child(cfg, "scenario")
+  self.scenario = wml.get_child(cfg, "scenario")
   for i = 1, cfg.player_count do
     local side = {
         side = i,
@@ -200,7 +178,7 @@ function Gen:make(cfg)
         team_name = "Bohaterowie",
         defeat_condition = "never",
     }
-    table.insert(s, wml.tag.side(side))
+    table.insert(self.scenario, wml.tag.side(side))
   end
 
   local i = cfg.player_count + 1
@@ -224,7 +202,7 @@ function Gen:make(cfg)
     boss.color = biome.color
     boss.team_name = biome.name
     table.insert(boss, wml.tag.variables({ biome = biome.name }))
-    table.insert(s, wml.tag.side(boss))
+    table.insert(self.scenario, wml.tag.side(boss))
     i = i + 1
   end
  
@@ -259,7 +237,7 @@ function Gen:make(cfg)
     )
   )
   local origin = Site.origin:new()
-  s = wml.merge(s, origin:wml(self.center), "append")
+  self.scenario = wml.merge(self.scenario, origin:wml(self.center), "append")
   self.center.site = origin.name
   self.sites:add(self.center)
   hexes:remove(self.center)
@@ -267,7 +245,7 @@ function Gen:make(cfg)
   for biome in iter(self.biomes) do
     for site in iter(biome.sites) do
       for site_wml in site:place(self.center, hexes:intersect(biome.hexes)) do
-        s = wml.merge(s, site_wml, "append")
+        self.scenario = wml.merge(self.scenario, site_wml, "append")
         for item in wml.child_range(site_wml, "item") do
           local hex = self.map:get(item.x, item.y)
           hexes:remove(item)
@@ -290,13 +268,13 @@ function Gen:make(cfg)
   for hex in self.map:iter() do
     local label = hex:label()
     if label then
-      table.insert(s, wml.tag.label(label))
+      table.insert(self.scenario, wml.tag.label(label))
     end
   end
 
-  s.map_data = self.map:as_map_data()
+  self.scenario.map_data = self.map:as_map_data()
 
-  for side in drop(cfg.player_count, wml.child_range(s, "side")) do
+  for side in drop(cfg.player_count, wml.child_range(self.scenario, "side")) do
     local vars = wml.get_child(side, "variables")
     local biome = self.biomes[vars.biome]
     for u in self:initial_spawn(biome, side.side) do
@@ -325,12 +303,12 @@ function Gen:make(cfg)
           wml.tag.args(respawn_args)
       })
     }
-    table.insert(s, wml.tag.event(respawn))
+    table.insert(self.scenario, wml.tag.event(respawn))
   end
 
-  local schedule = wml.child_array(s, "time")
+  local schedule = wml.child_array(self.scenario, "time")
   for biome in iter(self.biomes) do
-    table.insert(s, wml.tag.time_area(biome:time_area(iter(schedule))))
+    table.insert(self.scenario, wml.tag.time_area(biome:time_area(iter(schedule))))
   end
 
   local vars = as_table(
@@ -342,7 +320,7 @@ function Gen:make(cfg)
     )
   )
   vars.active = "meadows"
-  table.insert(s, wml.tag.variables(vars))
+  table.insert(self.scenario, wml.tag.variables(vars))
 
   local preload = {
     name = "preload",
@@ -352,9 +330,9 @@ function Gen:make(cfg)
         code = [[ wesnoth.dofile("~add-ons/scenario_toolbox/lua/example/init.lua") ]]
     })
   }
-  table.insert(s, wml.tag.event(preload))
+  table.insert(self.scenario, wml.tag.event(preload))
 
-  return s
+  return self.scenario
 end
 
 return Gen

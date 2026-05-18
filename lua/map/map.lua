@@ -1,18 +1,21 @@
-local Map = { Hex = require("scenario_toolbox/lua/map/hex") }
+local Hex = require("scenario_toolbox/lua/map/hex")
+local Map = { hex = Hex.new }
 
-function Map:new(width, height, terrain)
+function Map:new(width, height, ...)
   local m = setmetatable(
-    { width = width, height = height, default_terrain = terrain },
+    { width = width, height = height },
     { __index = self }
   )
 
   for y = 0, height do
     local row = {}
     for x = 0, width do
-      row[x] = self.Hex:new(m, x, y, terrain)
+      row[x] = self.hex(m, x, y, ...)
     end
     m[y] = row
   end
+
+  m.center = m:get(width / 2, height / 2)
 
   return m
 end

@@ -4,7 +4,7 @@ local Predicate = require("scenario_toolbox/lua/lib/predicate")
 local Hex = {}
 local __Hex = { __index = Hex }
 
-function Hex:new(map, x, y, biome)
+function Hex.new(map, x, y, biome)
   local this = {
       map = map,
       x = x,
@@ -12,7 +12,7 @@ function Hex:new(map, x, y, biome)
       height = nil,
       terrain = ""
   }
-  self.__index = self
+
   if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
     biome:add_hex(this)
   end
@@ -82,6 +82,10 @@ end
 
 function Hex:distance(other)
   return (self:as_vec() - other:as_vec()):length()
+end
+
+function Hex:border_distance()
+  return mathx.min(self.x, self.y, self.map.width - self.x, self.map.height - self.y)
 end
 
 function Hex:set_label(text, colour)
