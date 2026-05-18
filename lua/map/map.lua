@@ -52,9 +52,9 @@ function Map:as_map_data()
         map = map .. node.starting_player .. " "
       end
       if x < self.width then
-          map = map .. node.terrain .. ", "
+          map = map .. node:get_terrain() .. ", "
       else
-        map = map .. node.terrain .. "\n"
+        map = map .. node:get_terrain() .. "\n"
       end
     end
   end

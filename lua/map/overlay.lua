@@ -1,13 +1,26 @@
 local Prob = require("scenario_toolbox/lua/lib/probability")
 local Vec = require("scenario_toolbox/lua/map/cubic_vector")
+
 local Overlay = {}
 
 function Overlay:new(props)
-  return setmetatable(props or {}, { __index = self })
+  local ov = setmetatable(props or {}, { __index = self })
+  ov.app = setmetatable({}, { __index = ov, __call = self.__call })
+  return ov
+end
+
+function Overlay:__call(terrain)
+  return string.format("%s^%s", terrain, self.code)
+end
+
+function Overlay:weigh(hex)
+  local nearby_keep = any(Hex.is_keep, hex:in_circle(self.distance))
+  local no_free_neighbours = all(get("overlay"), hex:circle(1))
+  return (nearby_keep or no_free_neighbours) and 0 or self.kfreq
 end
 
 function Overlay:apply(hex)
-  hex.terrain = string.format("%s^%s", hex.terrain, self.code)
+  hex.overlay = self.app
   return Hex.Set:singleton(hex)
 end
 
@@ -96,30 +109,28 @@ Overlay.castle = Overlay:new({ name = "castle" })
 
 function Overlay.castle:new(spec)
   return Overlay.new(self, { 
-      keep = spec.keep,
-      castle = spec.castle,
+      keep = setmetatable({ name = "keep", code = spec.keep }, self),
+      castle = setmetatable({ name = "castle", code = spec.castle }, self),
       kfreq = spec.keep_frequency,
       distance = spec.distance,
       size = Prob.Normal:new(spec.mean_size, spec.size_std_dev)
   })
 end
 
-function Overlay:weigh(hex)
-  local nearby_keep = any(Hex.is_keep, hex:in_circle(self.distance))
-  local no_free_neighbours = all(Hex.has_overlay, hex:circle(1))
-  return (nearby_keep or no_free_neighbours) and 0 or self.kfreq
+function Overlay.castle:__call()
+  return self.code
 end
 
 function Overlay.castle:apply(hex)
   local castle = Hex.Set:singleton(hex)
   local neighbours = Hex.Set:new(
-    hex:circle(1)):filter(function(h) return not h:has_overlay() end
+    hex:circle(1)):filter(function(h) return not h.overlay end
   )
   local size = self.size:sample_int(1, neighbours.size)
-  hex.terrain = self.keep
+  hex.overlay = self.keep
   for _ = 1, size do
     local h = neighbours:pop_random()
-    h.terrain = self.castle
+    h.overlay = self.castle
     castle:add(h)
   end
   return castle
@@ -133,10 +144,18 @@ Overlay.bridge.directions = {
 }
 
 function Overlay.bridge:new(spec)
-  return Overlay.new(self, {
+  local b = Overlay.new(self, {
     code = spec.code,
     freq = spec.frequency,
   })
+  function b.app(dir)
+    return setmetatable({ dir = dir }, { __index = b, __call = self.__call })
+  end
+  return b
+end
+
+function Overlay.bridge:__call(terrain)
+  return string.format("%s^%s%s", terrain, self.code, self.dir)
 end
 
 function Overlay.bridge:is_land(hex)
@@ -155,8 +174,7 @@ end
 
 function Overlay.bridge:apply(hex)
   local applicable = self:applicable_directions(hex)
-  local dir = applicable[mathx.random(#applicable)]
-  hex.terrain = string.format("%s^%s%s", hex.terrain, self.code, dir)
+  hex.overlay = self.app(applicable[mathx.random(#applicable)])
   return Hex.Set:singleton(hex)
 end
 

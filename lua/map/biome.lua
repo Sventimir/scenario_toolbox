@@ -47,6 +47,7 @@ function Biome:add_hex(hex)
     hex.biome:remove_hex(hex)
   end
   hex.biome = self
+  hex.overlays = self.overlay
   self.hexes:add(hex)
 end
 

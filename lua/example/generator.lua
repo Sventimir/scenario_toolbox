@@ -35,7 +35,6 @@ function Gen:heightmap()
 
   for hex in self.map.center:in_circle(2) do
     hex.height = 0
-    hex.terrain = self.map.center.biome.terrain[hex.height]
     hexes:remove(hex)
   end
 
@@ -232,6 +231,14 @@ function Gen:make(cfg)
     end
   end
 
+  self.units = Hex.Set:new()
+  local starting_positions = Hex.Set:new(self.map.center:circle(1))
+  for i = 1, cfg.player_count do
+    local hex = starting_positions:pop_random()
+    hex.starting_location = i
+    self.units:add(hex)
+  end
+
   self:heightmap()
   self:gen_biome_centers()
   self:expand_biomes()
@@ -243,27 +250,11 @@ function Gen:make(cfg)
 
   while not hexes:empty() do
     local hex = hexes:random()
-    hex.terrain = hex.biome.terrain[hex.height]
-    ov = Overlay.select(hex.biome.overlay, hex)
+    ov = Overlay.select(hex.overlays, hex)
     if ov then
       local overlayed = ov:apply(hex)
       hexes = hexes:diff(overlayed)
     end
-  end
-
-  hexes = Hex.Set:new(
-    filter(
-      function(h) return not (h:has_village() or h:is_border()) end,
-      self.map:iter()
-    )
-  )
-  self.units = Hex.Set:new()
-
-  local starting_positions = Hex.Set:new(self.map.center:circle(1))
-  for i = 1, cfg.player_count do
-    local hex = starting_positions:pop_random()
-    hex.terrain = string.format("%i %s", i, hex.terrain)
-    self.units:add(hex)
   end
 
   for hex in self.map:iter() do

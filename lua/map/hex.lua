@@ -10,7 +10,8 @@ function Hex.new(map, x, y, biome)
       x = x,
       y = y,
       height = nil,
-      terrain = ""
+      terrain = "",
+      overlays = biome.overlay,
   }
 
   if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
@@ -58,7 +59,8 @@ end
 
 function Hex:get_terrain()
   if self.terrain == "" then
-    self.terrain = self.biome.terrain[self.height]
+    local start = self.starting_location and string.format("%d ", self.starting_location) or ""
+    self.terrain = start .. (self.overlay or id)(self.biome.terrain[self.height])
   end
   return self.terrain
 end
@@ -111,28 +113,25 @@ function Hex:is_border()
     or self.y <= 0 or self.y >= self.map.height
 end
 
-function Hex:has_overlay()
-  return string.find(self:get_terrain(), "%^")
-end
-
 function Hex:has_forest()
-  return string.find(self:get_terrain(), "%^F")
+  return self.overlay and self.overlay.name == "forest"
 end
 
 function Hex:has_village()
-  return string.find(self:get_terrain(), "%^V")
+  return self.overlay and self.overlay.name == "village"
 end
 
 function Hex:is_water()
-  return string.find(self:get_terrain(), "^W") or string.find(self.terrain, "^Ss")
+  local t = self.biome.terrain[self.height]
+  return string.find(t, "^W") or string.find(t, "^Ss")
 end
 
 function Hex:is_keep()
-  return string.find(self:get_terrain(), "^K")
+  return self.overlay and self.overlay.name == "keep"
 end
 
 function Hex:is_castle()
-  return string.find(self:get_terrain(), "^C")
+  return self.overlay and self.overlay.name == "castle"
 end
 
 Hex.Set = {}

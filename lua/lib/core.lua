@@ -10,6 +10,10 @@ if not mathx then
   end
 end
 
+function id(x) return x end
+
+function const(v) return function() return v end end
+
 function as_table(iter, state, ctrl)
   local t = {}
   for item in iter, state, ctrl do
