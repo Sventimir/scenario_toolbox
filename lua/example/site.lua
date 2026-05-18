@@ -214,9 +214,7 @@ end
 
 function Site.altar:place(origin, available_hexes)
   local r = self.distance:sample_int(self.min_dist, self.max_dist)
-  local hexset = Hex.Set:new(origin:circle(r)):intersect(
-    available_hexes:filter(function(h) return h.height >= 0 end)
-  )
+  local hexset = Hex.Set:new(origin:circle(r)):intersect(available_hexes)
   local i = 0
   while hexset:empty() and r + i <= self.max_dist and r - i >= self.min_dist do
     i = i + 1
@@ -312,13 +310,9 @@ function Site.burial:wml(x, y)
   return spec
 end
 
-function Site.burial.suitable_hex(hex)
-  return hex.height >= 0
-end
-
 function Site.burial:place(origin, available_hexes)
   local wmls = {}
-  local remaining_available_hexes = available_hexes:filter(self.suitable_hex)
+  local remaining_available_hexes = Hex.Set:new(available_hexes:iter())
   for i = 1, self.count do
     local altar_origin_dist = origin:distance(self.altars[self.biome.name])
     local dist_origin = self:sample_distance(self.distance.origin)

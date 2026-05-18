@@ -32,11 +32,10 @@ end
 
 function Gen:heightmap()
   hexes = Hex.Set:new(self.map:iter())
-  self.center = hexes:remove(self.map.height / 2, self.map.width / 2)
 
-  for hex in self.center:in_circle(2) do
+  for hex in self.map.center:in_circle(2) do
     hex.height = 0
-    hex.terrain = self.center.biome.terrain[self.center.height]
+    hex.terrain = self.map.center.biome.terrain[hex.height]
     hexes:remove(hex)
   end
 
@@ -52,7 +51,7 @@ function Gen:heightmap()
   local stddev = 0.7
   local ocean_chance = arith.Ratio:new(0, 1)
   while r < dim do
-    for hex in self.center:circle(r) do
+    for hex in self.map.center:circle(r) do
       if not hex.height then
         self:gen_height(hex, ocean_chance, stddev)
       end
@@ -69,7 +68,7 @@ function Gen:gen_biome_centers()
   local hexes = Hex.Set:new(
     filter(
       function(h) 
-        return h:distance(self.center) > 10 and h.biome.name == "meadows"
+        return h:distance(self.map.center) > 10 and h.biome.name == "meadows"
       end,
       self.map:iter()
     )
@@ -86,7 +85,7 @@ function Gen:gen_biome_centers()
 end
 
 function Gen:biomeset(hex)
-  local distance = hex:distance(self.center)
+  local distance = hex:distance(self.map.center)
   local biomes = {}
   local total_prob = 0
   for biome in iter(self.biomes) do
@@ -124,7 +123,7 @@ function Gen:expand_biomes()
             hex:circle(1)
           )
         )
-        if hex:distance(self.center) > 3 and mathx.random(0, r) < 2 * valid_neighbours then
+        if hex:distance(self.map.center) > 3 and mathx.random(0, r) < 2 * valid_neighbours then
           table.insert(new_hexes, hex)
           center.biome:add_hex(hex)
         end
@@ -207,15 +206,37 @@ function Gen:make(cfg)
   end
  
   self.map = Map:new(cfg.width, cfg.height, self.biomes.meadows)
+  local hexes = Hex.Set:new(self.map:iter())
+  self.sites = Hex.Set:new()
   Site:init(self.map, self.biomes, cfg)
+
+  local origin = Site.origin:new()
+  self.scenario = wml.merge(self.scenario, origin:wml(self.map.center), "append")
+  self.map.center.site = origin.name
+  self.sites:add(self.map.center)
+  hexes:remove(self.map.center)
+
+  for biome in iter(self.biomes) do
+    for site in iter(biome.sites) do
+      for site_wml in site:place(self.map.center, hexes) do
+        self.scenario = wml.merge(self.scenario, site_wml, "append")
+        for item in wml.child_range(site_wml, "item") do
+          local hex = self.map:get(item.x, item.y)
+          hexes:remove(item)
+          hex.site = site.name
+          biome:add_hex(hex)
+          self.sites:add(hex)
+          table.insert(self.biome_centers, hex)
+        end
+      end
+    end
+  end
 
   self:heightmap()
   self:gen_biome_centers()
   self:expand_biomes()
 
-  self.sites = Hex.Set:new()
-  local hexes = Hex.Set:new(self.map:iter())
-  local camp = Hex.Set:new(self.center:circle(3)):pop_random()
+  local camp = Hex.Set:new(self.map.center:circle(3)):pop_random()
   local ov = any(Predicate:has("name", "castle"), iter(self.biomes.meadows.overlay))
   local overlayed = ov:apply(camp)
   hexes = hexes:diff(overlayed)
@@ -236,29 +257,9 @@ function Gen:make(cfg)
       self.map:iter()
     )
   )
-  local origin = Site.origin:new()
-  self.scenario = wml.merge(self.scenario, origin:wml(self.center), "append")
-  self.center.site = origin.name
-  self.sites:add(self.center)
-  hexes:remove(self.center)
-
-  for biome in iter(self.biomes) do
-    for site in iter(biome.sites) do
-      for site_wml in site:place(self.center, hexes:intersect(biome.hexes)) do
-        self.scenario = wml.merge(self.scenario, site_wml, "append")
-        for item in wml.child_range(site_wml, "item") do
-          local hex = self.map:get(item.x, item.y)
-          hexes:remove(item)
-          hex.site = site.name
-          self.sites:add(hex)
-        end
-      end
-    end
-  end
-
   self.units = Hex.Set:new()
 
-  local starting_positions = Hex.Set:new(self.center:circle(1))
+  local starting_positions = Hex.Set:new(self.map.center:circle(1))
   for i = 1, cfg.player_count do
     local hex = starting_positions:pop_random()
     hex.terrain = string.format("%i %s", i, hex.terrain)
@@ -281,7 +282,7 @@ function Gen:make(cfg)
       table.insert(side, u)
     end
 
-    local origin_at_night = self.center:coords()
+    local origin_at_night = self.map.center:coords()
     origin_at_night.time_of_day = "chaotic"
     local respawn_args = {
       area = biome.name,

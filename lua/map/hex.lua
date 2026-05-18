@@ -58,10 +58,9 @@ end
 
 function Hex:get_terrain()
   if self.terrain == "" then
-    return self.biome.terrain[self.height]
-  else
-    return self.terrain
+    self.terrain = self.biome.terrain[self.height]
   end
+  return self.terrain
 end
 
 function Hex:show()
