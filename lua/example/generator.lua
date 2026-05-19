@@ -12,8 +12,91 @@ Vec = require("scenario_toolbox/lua/map/cubic_vector")
 Gen = {
   side_color = { "red", "blue", "purple" },
   biomes = {},
-  biome_centers = {},
+  biome_centers = Hex.Set:new(),
 }
+
+function Hex:region()
+  if self:border_distance() < 3 then
+    return "border"
+  else
+    local center_dist = self:distance(self.map.center)
+    if center_dist < 3 then
+      return center
+    elseif center_dist > mathx.min(self.map.width, self.map.height) / 3 then
+      return "shore"
+    else
+      return "interior"
+    end
+  end
+end
+
+function Gen:make_sites()
+  local origin = Site.origin:new()
+  local hexes = Hex.Set:new(self.map:iter())
+  self.scenario = wml.merge(self.scenario, origin:wml(self.map.center), "append")
+  self.map.center.site = origin.name
+  self.sites:add(self.map.center)
+  hexes:remove(self.map.center)
+
+  for biome in iter(self.biomes) do
+    for site in iter(biome.sites) do
+      for site_wml in site:place(self.map.center, hexes) do
+        self.scenario = wml.merge(self.scenario, site_wml, "append")
+        for item in wml.child_range(site_wml, "item") do
+          local hex = self.map:get(item.x, item.y)
+          hexes:remove(item)
+          hex.site = site.name
+          biome:add_hex(hex)
+          self.sites:add(hex)
+          self.biome_centers:add(hex)
+        end
+      end
+    end
+  end
+end
+
+function Gen:seed_biomes()
+  local hexes = Hex.Set:new(
+    filter(
+      function(h) 
+        return h:distance(self.map.center) > 10 and h.biome.name == "meadows"
+      end,
+      self.map:iter()
+    )
+  )
+  while hexes.size > 0 do
+    local hex = hexes:pop_random()
+    local biome = self:biomeset(hex)
+    if biome then
+      hexes = hexes:diff(Hex.Set:new(hex:in_circle(10)))
+      biome:add_hex(hex)
+      self.biome_centers:add(hex)
+    end
+  end
+end
+
+function Gen:biomeset(hex)
+  local distance = hex:distance(self.map.center)
+  local biomes = {}
+  local total_prob = 0
+  for biome in iter(self.biomes) do
+    local probability = mathx.round(
+      1000 * biome.distance_from_center:probability(distance)
+    )
+    table.insert(biomes, { prob = probability, biome = biome })
+    total_prob = total_prob + probability
+  end
+  if total_prob > 0 then
+    local roll = mathx.random(0, total_prob - 1)
+    for b in iter(biomes) do
+      if roll < b.prob then
+        return b.biome
+      else
+        roll = roll - b.prob
+      end
+    end
+  end
+end
 
 local function hex_height(hex)
   if hex then return hex.height or 0 else return 0 end
@@ -63,53 +146,10 @@ function Gen:heightmap()
   end
 end
 
-function Gen:gen_biome_centers()
-  local hexes = Hex.Set:new(
-    filter(
-      function(h) 
-        return h:distance(self.map.center) > 10 and h.biome.name == "meadows"
-      end,
-      self.map:iter()
-    )
-  )
-  while hexes.size > 0 do
-    local hex = hexes:pop_random()
-    local biome = self:biomeset(hex)
-    if biome then
-      hexes = hexes:diff(Hex.Set:new(hex:in_circle(10)))
-      biome:add_hex(hex)
-      table.insert(self.biome_centers, hex)
-    end
-  end
-end
-
-function Gen:biomeset(hex)
-  local distance = hex:distance(self.map.center)
-  local biomes = {}
-  local total_prob = 0
-  for biome in iter(self.biomes) do
-    local probability = mathx.round(
-      1000 * biome.distance_from_center:probability(distance)
-    )
-    table.insert(biomes, { prob = probability, biome = biome })
-    total_prob = total_prob + probability
-  end
-  if total_prob > 0 then
-    local roll = mathx.random(0, total_prob - 1)
-    for b in iter(biomes) do
-      if roll < b.prob then
-        return b.biome
-      else
-        roll = roll - b.prob
-      end
-    end
-  end
-end
-
 function Gen:expand_biomes()
   local r = 1
-  while #self.biome_centers > 0 do
-    for center_idx, center in ipairs(self.biome_centers) do
+  while self.biome_centers.size > 0 do
+    for center in self.biome_centers:iter() do
       local new_hexes = {}
       local potential_hexes = filter(
         Predicate:has("name", "meadows"):contra_map(get("biome")),
@@ -128,7 +168,7 @@ function Gen:expand_biomes()
         end
       end
       if #new_hexes == 0 then
-        table.remove(self.biome_centers, center_idx)
+        self.biome_centers:remove(center)
       end
     end
     r = r + 1
@@ -205,31 +245,8 @@ function Gen:make(cfg)
   end
  
   self.map = Map:new(cfg.width, cfg.height, self.biomes.meadows)
-  local hexes = Hex.Set:new(self.map:iter())
   self.sites = Hex.Set:new()
   Site:init(self.map, self.biomes, cfg)
-
-  local origin = Site.origin:new()
-  self.scenario = wml.merge(self.scenario, origin:wml(self.map.center), "append")
-  self.map.center.site = origin.name
-  self.sites:add(self.map.center)
-  hexes:remove(self.map.center)
-
-  for biome in iter(self.biomes) do
-    for site in iter(biome.sites) do
-      for site_wml in site:place(self.map.center, hexes) do
-        self.scenario = wml.merge(self.scenario, site_wml, "append")
-        for item in wml.child_range(site_wml, "item") do
-          local hex = self.map:get(item.x, item.y)
-          hexes:remove(item)
-          hex.site = site.name
-          biome:add_hex(hex)
-          self.sites:add(hex)
-          table.insert(self.biome_centers, hex)
-        end
-      end
-    end
-  end
 
   self.units = Hex.Set:new()
   local starting_positions = Hex.Set:new(self.map.center:circle(1))
@@ -239,10 +256,12 @@ function Gen:make(cfg)
     self.units:add(hex)
   end
 
+  self:make_sites()
   self:heightmap()
-  self:gen_biome_centers()
+  self:seed_biomes()
   self:expand_biomes()
 
+  local hexes = Hex.Set:new(self.map:iter())
   local camp = Hex.Set:new(self.map.center:circle(3)):pop_random()
   local ov = any(Predicate:has("name", "castle"), iter(self.biomes.meadows.overlay))
   local overlayed = ov:apply(camp)
