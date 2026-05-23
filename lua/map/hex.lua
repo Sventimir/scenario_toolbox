@@ -1,8 +1,87 @@
 local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 local Predicate = require("scenario_toolbox/lua/lib/predicate")
 
-local Hex = {}
-local __Hex = { __index = Hex }
+local Base = {}
+local __Base = { __index = Base }
+
+function Base.map_size(x, y)
+  return { width = y and x or x.width or x.x, height = y or x.height or x.y }
+end
+
+function Base.new(x, y)
+  return setmetatable({ x = x, y = y }, __Base)
+end
+
+function Base:equals(other)
+  return self.x == other.x and self.y == other.y
+end
+
+function Base:as_vec()
+  return Vec.new(self.y - mathx.floor(self.x / 2), self.x)
+end
+
+function Base:translate(v)
+  return Base.new(v:translate(self.x, self.y))
+end
+
+function Base:circle(r)
+  return map(function(v) return self:translate(v) end, Vec.equidistant(r))
+end
+
+function Base:adjacent()
+  return self:circle(1)
+end
+
+function Base:in_circle(radius)
+  return chain(iter({ self }), join(map(function(r) return self:circle(r) end, take(radius, arith.nats()))))
+end
+
+function Base:distance(hex)
+  return (self:as_vec() - hex:as_vec()):length()
+end
+
+function Base:on_map(width, height)
+  local size = self.map_size(width, height)
+  return self.x > 0 and self.x <= size.width and self.y > 0 and self.y <= size.height
+end
+
+function Base:is_border(width, height)
+  local size = self.map_size(width, height)
+  return self.x == 0 or self.y == 0 or self.x == size.width + 1 or self.y == size.height + 1
+end
+
+function Base:border_distance(width, height)
+  local size = self.map_size(width, height)
+  return mathx.min(self.x, self.y, size.width - self.x + 1, size.height - self.y + 1)
+end
+
+function __Base:__tostring()
+  return string.format("(%d, %d)", self.x, self.y)
+end
+
+function __Base:__equal(other)
+  return self:equals(other)
+end
+
+function Base.from_wesnoth(hex)
+
+  function hex:translate(v)
+    return Base.from_wesnoth(wesnoth.map.get(v:translate(self.x, self.y)))
+  end
+
+  hex.equals = Base.equals
+  hex.coords = Base.coords
+  hex.circle = Base.circle
+  hex.in_circle = Base.in_circle
+  hex.as_vec = Base.as_vec
+  hex.distance = Base.distance
+  hex.__tostring = Base.__tostring
+
+  return hex
+end
+
+local Hex = setmetatable({}, __Base)
+local __Hex = { __index = Hex, __tostring = __Base.__tostring, __equal = __Base.__equal }
 
 function Hex.new(map, x, y, biome)
   local this = {
@@ -20,41 +99,8 @@ function Hex.new(map, x, y, biome)
   return setmetatable(this, __Hex)
 end
 
-function Hex:from_wesnoth(hex)
-
-  function hex:translate(v)
-    return Hex:from_wesnoth(wesnoth.map.get(v:translate(self.x, self.y)))
-  end
-
-  hex.equals = Hex.equals
-  hex.coords = Hex.coords
-  hex.circle = Hex.circle
-  hex.in_circle = Hex.in_circle
-  hex.as_vec = Hex.as_vec
-  hex.distance = Hex.distance
-  hex.__tostring = Hex.__tostring
-
-  return hex
-end
-
 function Hex:coords()
   return { x = self.x, y = self.y }
-end
-
-function Hex:equals(other)
-  return other and self.x == other.x and self.y == other.y
-end
-
-function Hex:translate(v)
-  return self.map:get(v:translate(self.x, self.y))
-end
-
-function Hex:circle(radius)
-  return filter_map(function(v) return self:translate(v) end, Vec.equidistant(radius))
-end
-
-function Hex:in_circle(radius)
-  return chain(iter({ self }), join(map(function(r) return self:circle(r) end, take(radius, arith.nats()))))
 end
 
 function Hex:get_height()
@@ -71,26 +117,6 @@ end
 
 function Hex:show()
   return self.terrain
-end
-
-function __Hex:__tostring()
-  return string.format("(%d, %d)[%s]", self.x, self.y, self.terrain)
-end
-
-function __Hex:__equal(other)
-  return self.x == other.x and self.y == other.y
-end
-
-function Hex:as_vec()
-  return Vec.new(self.y - mathx.floor(self.x / 2), self.x)
-end
-
-function Hex:distance(other)
-  return (self:as_vec() - other:as_vec()):length()
-end
-
-function Hex:border_distance()
-  return mathx.min(self.x, self.y, self.map.width - self.x, self.map.height - self.y)
 end
 
 function Hex:set_label(text, colour)
@@ -110,11 +136,6 @@ end
 function Hex:at_night()
   local schedule = wesnoth.schedule.get_time_of_day(self)
   return schedule.lawful_bonus < 0
-end
-
-function Hex:is_border()
-  return self.x <= 0 or self.x >= self.map.width
-    or self.y <= 0 or self.y >= self.map.height
 end
 
 function Hex:has_forest()
@@ -138,8 +159,17 @@ function Hex:is_castle()
   return self.overlay and self.overlay.name == "castle"
 end
 
-function Hex:adjacent()
-  return self:circle(1)
+function Hex:translate(v)
+  local h = Base.translate(self, v)
+  return self.map:get(h.x, h.y)
+end
+
+function Hex:border_distance()
+  return Base.border_distance(self, self.map)
+end
+
+function Hex:circle(r)
+  return filter_map(function(h) return self.map:get(h.x, h.y) end, Base.circle(self, r))
 end
 
 Hex.Set = {}
