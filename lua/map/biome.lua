@@ -1,7 +1,9 @@
-local Hex = require("scenario_toolbox/lua/map/hex")
+local ModHex = require("scenario_toolbox/lua/map/hex")
 local Overlay = require("scenario_toolbox/lua/map/overlay")
 local Prob = require("scenario_toolbox/lua/lib/probability")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
+
+local Hex = ModHex.Legacy
 
 local Biome = {}
 

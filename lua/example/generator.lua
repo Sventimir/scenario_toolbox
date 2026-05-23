@@ -1,5 +1,5 @@
 Biome = require("scenario_toolbox/lua/map/biome")
-Hex = require("scenario_toolbox/lua/map/hex")
+ModHex = require("scenario_toolbox/lua/map/hex")
 Map = require("scenario_toolbox/lua/map/map")
 Overlay = require("scenario_toolbox/lua/map/overlay")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
@@ -8,6 +8,7 @@ Site = require("scenario_toolbox/lua/example/site")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Vec = require("scenario_toolbox/lua/map/cubic_vector")
 
+Hex = ModHex.Legacy
 
 Gen = {
   side_color = { "red", "blue", "purple" },

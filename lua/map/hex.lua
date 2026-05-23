@@ -1,89 +1,91 @@
 local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 local Predicate = require("scenario_toolbox/lua/lib/predicate")
 
-local Base = {}
-local __Base = { __index = Base }
+local Mod = {}
 
-function Base.map_size(x, y)
+Mod.Base = {}
+Mod.__Base = { __index = Mod.Base }
+
+function Mod.Base.map_size(x, y)
   return { width = y and x or x.width or x.x, height = y or x.height or x.y }
 end
 
-function Base.new(x, y)
-  return setmetatable({ x = x, y = y }, __Base)
+function Mod.Base.new(x, y)
+  return setmetatable({ x = x, y = y }, Mod.__Base)
 end
 
-function Base:equals(other)
+function Mod.Base:equals(other)
   return self.x == other.x and self.y == other.y
 end
 
-function Base:as_vec()
+function Mod.Base:as_vec()
   return Vec.new(self.y - mathx.floor(self.x / 2), self.x)
 end
 
-function Base:translate(v)
-  return Base.new(v:translate(self.x, self.y))
+function Mod.Base:translate(v)
+  return Mod.Base.new(v:translate(self.x, self.y))
 end
 
-function Base:circle(r)
+function Mod.Base:circle(r)
   return map(function(v) return self:translate(v) end, Vec.equidistant(r))
 end
 
-function Base:adjacent()
+function Mod.Base:adjacent()
   return self:circle(1)
 end
 
-function Base:in_circle(radius)
+function Mod.Base:in_circle(radius)
   return chain(iter({ self }), join(map(function(r) return self:circle(r) end, take(radius, arith.nats()))))
 end
 
-function Base:distance(hex)
+function Mod.Base:distance(hex)
   return (self:as_vec() - hex:as_vec()):length()
 end
 
-function Base:on_map(width, height)
+function Mod.Base:on_map(width, height)
   local size = self.map_size(width, height)
   return self.x > 0 and self.x <= size.width and self.y > 0 and self.y <= size.height
 end
 
-function Base:is_border(width, height)
+function Mod.Base:is_border(width, height)
   local size = self.map_size(width, height)
   return self.x == 0 or self.y == 0 or self.x == size.width + 1 or self.y == size.height + 1
 end
 
-function Base:border_distance(width, height)
+function Mod.Base:border_distance(width, height)
   local size = self.map_size(width, height)
   return mathx.min(self.x, self.y, size.width - self.x + 1, size.height - self.y + 1)
 end
 
-function __Base:__tostring()
+function Mod.__Base:__tostring()
   return string.format("(%d, %d)", self.x, self.y)
 end
 
-function __Base:__equal(other)
+function Mod.__Base:__equal(other)
   return self:equals(other)
 end
 
-function Base.from_wesnoth(hex)
+function Mod.Base.from_wesnoth(hex)
 
   function hex:translate(v)
-    return Base.from_wesnoth(wesnoth.map.get(v:translate(self.x, self.y)))
+    return Mod.Base.from_wesnoth(wesnoth.map.get(v:translate(self.x, self.y)))
   end
 
-  hex.equals = Base.equals
-  hex.coords = Base.coords
-  hex.circle = Base.circle
-  hex.in_circle = Base.in_circle
-  hex.as_vec = Base.as_vec
-  hex.distance = Base.distance
-  hex.__tostring = Base.__tostring
+  hex.equals = Mod.Base.equals
+  hex.coords = Mod.Base.coords
+  hex.circle = Mod.Base.circle
+  hex.in_circle = Mod.Base.in_circle
+  hex.as_vec = Mod.Base.as_vec
+  hex.distance = Mod.Base.distance
+  hex.__tostring = Mod.Base.__tostring
 
   return hex
 end
 
-local Hex = setmetatable({}, __Base)
-local __Hex = { __index = Hex, __tostring = __Base.__tostring, __equal = __Base.__equal }
+Mod.Legacy = setmetatable({}, Mod.__Base)
+Mod.__Legacy = { __index = Mod.Legacy, __tostring = Mod.__Base.__tostring, __equal = Mod.__Base.__equal }
 
-function Hex.new(map, x, y, biome)
+function Mod.Legacy.new(map, x, y, biome)
   local this = {
       map = map,
       x = x,
@@ -96,18 +98,18 @@ function Hex.new(map, x, y, biome)
   if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
     biome:add_hex(this)
   end
-  return setmetatable(this, __Hex)
+  return setmetatable(this, Mod.__Legacy)
 end
 
-function Hex:coords()
+function Mod.Legacy:coords()
   return { x = self.x, y = self.y }
 end
 
-function Hex:get_height()
+function Mod.Legacy:get_height()
   return mathx.round(self.height)
 end
 
-function Hex:get_terrain()
+function Mod.Legacy:get_terrain()
   if self.terrain == "" then
     local start = self.starting_location and string.format("%d ", self.starting_location) or ""
     self.terrain = start .. (self.overlay or id)(self.biome.terrain[self:get_height()])
@@ -115,66 +117,66 @@ function Hex:get_terrain()
   return self.terrain
 end
 
-function Hex:show()
+function Mod.Legacy:show()
   return self.terrain
 end
 
-function Hex:set_label(text, colour)
+function Mod.Legacy:set_label(text, colour)
   self.__label = { text = text, colour = colour }
 end
 
-function Hex:label()
+function Mod.Legacy:label()
   if self.__label then
     return wml.merge(self.__label, self:coords())
   end
 end
 
-function Hex:has_feature(name)
+function Mod.Legacy:has_feature(name)
   return self.feature and (not name or self.feature.name == name)
 end
 
-function Hex:at_night()
+function Mod.Legacy:at_night()
   local schedule = wesnoth.schedule.get_time_of_day(self)
   return schedule.lawful_bonus < 0
 end
 
-function Hex:has_forest()
+function Mod.Legacy:has_forest()
   return self.overlay and self.overlay.name == "forest"
 end
 
-function Hex:has_village()
+function Mod.Legacy:has_village()
   return self.overlay and self.overlay.name == "village"
 end
 
-function Hex:is_water()
+function Mod.Legacy:is_water()
   local t = self.biome.terrain[self:get_height()]
   return string.find(t, "^W") or string.find(t, "^Ss")
 end
 
-function Hex:is_keep()
+function Mod.Legacy:is_keep()
   return self.overlay and self.overlay.name == "keep"
 end
 
-function Hex:is_castle()
+function Mod.Legacy:is_castle()
   return self.overlay and self.overlay.name == "castle"
 end
 
-function Hex:translate(v)
-  local h = Base.translate(self, v)
+function Mod.Legacy:translate(v)
+  local h = Mod.Base.translate(self, v)
   return self.map:get(h.x, h.y)
 end
 
-function Hex:border_distance()
-  return Base.border_distance(self, self.map)
+function Mod.Legacy:border_distance()
+  return Mod.Base.border_distance(self, self.map)
 end
 
-function Hex:circle(r)
-  return filter_map(function(h) return self.map:get(h.x, h.y) end, Base.circle(self, r))
+function Mod.Legacy:circle(r)
+  return filter_map(function(h) return self.map:get(h.x, h.y) end, Mod.Base.circle(self, r))
 end
 
-Hex.Set = {}
+Mod.Set = {}
 
-function Hex.Set:new(hexes, state, ctrl)
+function Mod.Set:new(hexes, state, ctrl)
   local this = setmetatable({}, { __index = self })
   this.size = 0
   this.max_row = 0
@@ -187,13 +189,13 @@ function Hex.Set:new(hexes, state, ctrl)
   return this
 end
 
-function Hex.Set:singleton(hex)
+function Mod.Set:singleton(hex)
   local set = self:new()
   set:add(hex)
   return set
 end
 
-function Hex.Set:add(hex)
+function Mod.Set:add(hex)
   if self[hex.y] then
     if not self[hex.y][hex.x] then
       local row = self[hex.y]
@@ -210,7 +212,7 @@ function Hex.Set:add(hex)
   end
 end
 
-function Hex.Set:remove(...)
+function Mod.Set:remove(...)
   local hex = wesnoth.map.read_location(...)
   if self[hex.y] then
     local h = self[hex.y][hex.x]
@@ -220,7 +222,7 @@ function Hex.Set:remove(...)
   end
 end
 
-function Hex.Set:random()
+function Mod.Set:random()
   if self.size < 1 then
     error("Cannot pick from an empty hex-set!")
   end
@@ -228,24 +230,24 @@ function Hex.Set:random()
   return it()
 end
 
-function Hex.Set:pop_random()
+function Mod.Set:pop_random()
   local h = self:random()
   self:remove(h)
   return h
 end
 
-function Hex.Set:get(x, y)
+function Mod.Set:get(x, y)
   local loc = wesnoth.map.read_location(x, y)
   if self[loc.y] then
     return self[loc.y][loc.x]
   end
 end
 
-function Hex.Set:member(x, y)
+function Mod.Set:member(x, y)
   return self:get(x, y) and true or false
 end
 
-function Hex.Set:as_area()
+function Mod.Set:as_area()
   local it = self:iter()
   local h = it()
   if not h then return nil end
@@ -258,11 +260,11 @@ function Hex.Set:as_area()
   return x, y
 end
 
-function Hex.Set:member_pred()
+function Mod.Set:member_pred()
   return Predicate:func(function(x) return self:member(x) end)
 end
 
-function Hex.Set:iter_rows()
+function Mod.Set:iter_rows()
   local y = self.min_row - 1
   return function()
     repeat y = y + 1
@@ -271,7 +273,7 @@ function Hex.Set:iter_rows()
   end
 end
 
-function Hex.Set:iter()
+function Mod.Set:iter()
   local function iterate(row)
     local x = row.min_col - 1
     return function()
@@ -283,41 +285,41 @@ function Hex.Set:iter()
   return join(map(iterate, self:iter_rows()))
 end
 
-function Hex.Set:empty()
+function Mod.Set:empty()
   return self.size == 0
 end
 
-function Hex.Set:filter(predicate)
-  return Hex.Set:new(filter(predicate, self:iter()))
+function Mod.Set:filter(predicate)
+  return Mod.Set:new(filter(predicate, self:iter()))
 end
 
-function Hex.Set:intersect(other)
+function Mod.Set:intersect(other)
   local sets = { self, other }
   table.sort(sets, function(a, b) return a.size < b.size end)
-  return Hex.Set:new(filter(function(h) return sets[2]:member(h) end, sets[1]:iter()))
+  return Mod.Set:new(filter(function(h) return sets[2]:member(h) end, sets[1]:iter()))
 end
 
-function Hex.Set:diff(other)
+function Mod.Set:diff(other)
   return self:filter(function(h) return not other:member(h) end)
 end
 
-function Hex.Set:union(other)
-  return Hex.Set:new(chain(self:iter(), other:iter()))
+function Mod.Set:union(other)
+  return Mod.Set:new(chain(self:iter(), other:iter()))
 end
 
-function Hex.Set:partition(f)
+function Mod.Set:partition(f)
   local results = {}
   for hex in self:iter() do
     local key = f(hex)
     if not results[key] then
-      results[key] = Hex.Set:new()
+      results[key] = Mod.Set:new()
     end
     results[key]:add(hex)
   end
   return results
 end
 
-function Hex.Set:wml(tag)
+function Mod.Set:wml(tag)
   local contents = {}
   for hex in self:iter() do
     table.insert(contents, wml.tag[tag or "hex"](hex))
@@ -325,7 +327,7 @@ function Hex.Set:wml(tag)
   return contents
 end
 
-function Hex.Set:from_wml(spec)
+function Mod.Set:from_wml(spec)
   local hset = self:new()
   for tag in iter(spec) do
     hset:add(tag[2])
@@ -333,4 +335,6 @@ function Hex.Set:from_wml(spec)
   return hset
 end
 
-return Hex
+Mod.Legacy.Set = Mod.Set
+
+return Mod

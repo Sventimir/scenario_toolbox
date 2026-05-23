@@ -1,5 +1,5 @@
-local Hex = require("scenario_toolbox/lua/map/hex")
-local Map = { hex = Hex.new }
+local ModHex = require("scenario_toolbox/lua/map/hex")
+local Map = { hex = ModHex.Legacy.new }
 
 function Map:new(width, height, ...)
   local m = setmetatable(
