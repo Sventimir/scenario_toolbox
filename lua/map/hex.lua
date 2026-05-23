@@ -57,10 +57,14 @@ function Hex:in_circle(radius)
   return chain(iter({ self }), join(map(function(r) return self:circle(r) end, take(radius, arith.nats()))))
 end
 
+function Hex:get_height()
+  return mathx.round(self.height)
+end
+
 function Hex:get_terrain()
   if self.terrain == "" then
     local start = self.starting_location and string.format("%d ", self.starting_location) or ""
-    self.terrain = start .. (self.overlay or id)(self.biome.terrain[self.height])
+    self.terrain = start .. (self.overlay or id)(self.biome.terrain[self:get_height()])
   end
   return self.terrain
 end
@@ -122,7 +126,7 @@ function Hex:has_village()
 end
 
 function Hex:is_water()
-  local t = self.biome.terrain[self.height]
+  local t = self.biome.terrain[self:get_height()]
   return string.find(t, "^W") or string.find(t, "^Ss")
 end
 
@@ -132,6 +136,10 @@ end
 
 function Hex:is_castle()
   return self.overlay and self.overlay.name == "castle"
+end
+
+function Hex:adjacent()
+  return self:circle(1)
 end
 
 Hex.Set = {}
@@ -183,6 +191,9 @@ function Hex.Set:remove(...)
 end
 
 function Hex.Set:random()
+  if self.size < 1 then
+    error("Cannot pick from an empty hex-set!")
+  end
   local it = drop(mathx.random(0, self.size - 1), self:iter())
   return it()
 end

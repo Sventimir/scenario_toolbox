@@ -16,6 +16,10 @@ function mod.div(x, y)
   return x / y
 end
 
+function mod.square(x)
+  return x * x
+end
+
 -- Note: These start with 1, just like array indices.
 function mod.nats()
   local n = 0

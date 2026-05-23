@@ -49,4 +49,9 @@ end
 
 Prob.Normal.canonic = Prob.Normal:new()
 
+function Prob.variance(sample)
+  local mean = arith.mean(iter(sample))
+  return fold(add, 0, map(function(v) return square(v - mean) end, iter(sample)))
+end
+
 return Prob
