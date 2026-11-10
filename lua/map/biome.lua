@@ -41,23 +41,6 @@ function Biome:new(spec, side, Site)
   return setmetatable(biome, { __index = self })
 end
 
-function Biome:add_hex(hex)
-  if hex.biome then
-    hex.biome:remove_hex(hex)
-  end
-  hex.biome = self
-  hex.overlays = self.overlay
-  self.hexes:add(hex)
-end
-
-function Biome:remove_hex(hex)
-  self.hexes:remove(hex)
-end
-
-function Biome:belongs(hex)
-  return self.hexes:member(hex)
-end
-
 function Biome:time_area(it, state)
   local area = { id = self.name, x = "", y = "" }
   for hex in self.hexes:iter() do

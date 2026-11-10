@@ -1,7 +1,6 @@
 Biome = require("scenario_toolbox/lua/map/biome")
 Choice = require("scenario_toolbox/lua/lib/choice")
 Hex = require("scenario_toolbox/lua/map/hex")
-Map = require("scenario_toolbox/lua/map/map")
 Overlay = require("scenario_toolbox/lua/map/overlay")
 Predicate = require("scenario_toolbox/lua/lib/predicate")
 River = require("scenario_toolbox/lua/map/river")

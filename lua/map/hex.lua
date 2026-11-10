@@ -155,88 +155,6 @@ end
 function Mod.Gen:wml() -- luacheck:ignore 212 (unused 'self' required by the interface)
 end
 
-Mod.Legacy = setmetatable({}, Mod.__Base)
-Mod.__Legacy = { __index = Mod.Legacy, __tostring = Mod.__Base.__tostring, __equal = Mod.__Base.__equal }
-
-function Mod.Legacy.new(map, x, y, biome)
-  local this = {
-      map = map,
-      x = x,
-      y = y,
-      height = nil,
-      terrain = "",
-      overlays = biome.overlay,
-  }
-
-  if this.x > 0 and this.x <= map.width and this.y > 0 and this.y <= map.height then
-    biome:add_hex(this)
-  end
-  return setmetatable(this, Mod.__Legacy)
-end
-
-function Mod.Legacy:get_height()
-  return mathx.round(self.height)
-end
-
-function Mod.Legacy:get_terrain()
-  if self.terrain == "" then
-    local start = self.starting_location and string.format("%d ", self.starting_location) or ""
-    self.terrain = start .. (self.overlay or id)(self.biome.terrain[self:get_height()])
-  end
-  return self.terrain
-end
-
-function Mod.Legacy:show()
-  return self.terrain
-end
-
-function Mod.Legacy:set_label(text, colour)
-  self.__label = { text = text, colour = colour }
-end
-
-function Mod.Legacy:has_feature(name)
-  return self.feature and (not name or self.feature.name == name)
-end
-
-function Mod.Legacy:at_night()
-  local schedule = wesnoth.schedule.get_time_of_day(self)
-  return schedule.lawful_bonus < 0
-end
-
-function Mod.Legacy:has_forest()
-  return self.overlay and self.overlay.name == "forest"
-end
-
-function Mod.Legacy:has_village()
-  return self.overlay and self.overlay.name == "village"
-end
-
-function Mod.Legacy:is_water()
-  local t = self.biome.terrain[self:get_height()]
-  return string.find(t, "^W") or string.find(t, "^Ss")
-end
-
-function Mod.Legacy:is_keep()
-  return self.overlay and self.overlay.name == "keep"
-end
-
-function Mod.Legacy:is_castle()
-  return self.overlay and self.overlay.name == "castle"
-end
-
-function Mod.Legacy:translate(v)
-  local h = Mod.Base.translate(self, v)
-  return self.map:get(h.x, h.y)
-end
-
-function Mod.Legacy:border_distance()
-  return Mod.Base.border_distance(self, self.map)
-end
-
-function Mod.Legacy:circle(r)
-  return filter_map(function(h) return self.map:get(h.x, h.y) end, Mod.Base.circle(self, r))
-end
-
 Mod.Set = {}
 
 function Mod.Set:new(hexes, state, ctrl)
@@ -435,8 +353,6 @@ function Mod.Set:add_index(name, init)
   self.index[name] = Mod.Set.Index.new(self, init)
   return self.index[name]
 end
-
-Mod.Legacy.Set = Mod.Set
 
 Mod.Set.Index = {}
 Mod.Set.__Index = { __index = Mod.Set.Index }
