@@ -1,5 +1,4 @@
 local Prob = require("scenario_toolbox/lua/lib/probability")
-local Hex = require("scenario_toolbox/lua/map/hex")
 
 local Inventory = {}
 
@@ -113,12 +112,13 @@ function Inventory:predisplay(widget, choice)
   end
 end
 
-function Inventory:postdisplay(widget, choice)
+function Inventory:postdisplay(widget, choice) -- luacheck: ignore 212 (unused 'self' due to inertia)
   choice.item = choice.choices[widget.inventory_list.selected_index]
 end
 
 Inventory.actions = {
   [1] = function(self, item)
+     -- luacheck: ignore 122 (global state modification)
     local consume = wml.get_child(item, "consume")
     local equip = wml.get_child(item, "equip")
     wml.variables.unit = self.unit.__cfg
@@ -216,7 +216,7 @@ function Inventory.Item:map_wml()
   end
   local filter_team = wml.get_child(self, "fitler_team")
   if filter_team then
-    table.insert(sepc, wml.tag.filter_team(filter_team))
+    table.insert(spec, wml.tag.filter_team(filter_team))
   end
   table.insert(spec, wml.tag.variables(vars))
   return spec
@@ -238,6 +238,7 @@ function Inventory.Item:place(x, y)
 end
 
 if wesnoth.wml_actions then -- only available at runtime
+
   function wesnoth.wml_actions.inventory(conf)
     local f = wml.get_child(conf, "filter")
     for u in iter(wesnoth.units.find_on_map(f)) do
@@ -259,7 +260,7 @@ if wesnoth.wml_actions then -- only available at runtime
 
   -- After having created a unit, make sure its inventory gets processed,
   -- validated and saved.
-  function wesnoth.wml_actions.unit(spec)
+  function wesnoth.wml_actions.unit(spec) -- luacheck: ignore 122 (global state modification)
     Inventory.original_unit_wml_action(spec)
     local filter = (spec.x and spec.y) and { x = spec.x, y = spec.y } or { x = "recall", y = "recall" }
     local u = wesnoth.units.find(filter)[1]

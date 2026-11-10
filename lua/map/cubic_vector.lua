@@ -31,7 +31,7 @@ function __Vec:__tostring()
   return string.format("[%d, %d, %d]", self:sw(), self.s, self.se)
 end
 
-function Vec:scale(f, round)
+function Vec:scale(f)
   return Vec.new(mathx.floor(self.s * f), mathx.floor(self.se * f))
 end
 
@@ -103,7 +103,7 @@ end
 
 local eigenvector_names = { [0] = "n", "ne", "se", "s", "sw", "nw" }
 
-function Vec.unitary:each()
+function Vec.unitary:each() -- luacheck: ignore 212 (unused 'self' due to inertia)
   local i = -1
   return function()
     i = i + 1

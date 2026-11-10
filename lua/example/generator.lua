@@ -1,3 +1,4 @@
+-- luacheck: ignore 111 112 113
 Biome = require("scenario_toolbox/lua/map/biome")
 Choice = require("scenario_toolbox/lua/lib/choice")
 Hex = require("scenario_toolbox/lua/map/hex")
@@ -32,7 +33,7 @@ function Gen:initial_spawn(biome, side)
   end
 
   local function it()
-    while available_hexes.size > 0 do
+    while available_hexes.size > 0 do -- luacheck: ignore 512 (this is clearly executed more than once)
       local hex = available_hexes:pop_random()
       available_hexes = available_hexes:diff(Hex.Set:new(hex:in_circle(biome.spawn_distance)))
       self.units:add(hex)
@@ -123,8 +124,6 @@ function Gen:make(cfg)
     local label = hex:label()
     if label then
       table.insert(self.scenario, label)
-    end
-    if hex.site then
     end
     self.scenario = wml.merge(self.scenario, hex:wml(), "append")
   end

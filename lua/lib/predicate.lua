@@ -1,3 +1,4 @@
+-- luacheck: ignore 29 212 432  (unused 'self' due to inertia)
 local Predicate = {}
 local __Pred = { __index = Predicate }
 

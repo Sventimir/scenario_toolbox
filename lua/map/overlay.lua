@@ -183,7 +183,7 @@ end
 --   return applicable
 -- end
 
-function Overlay.bridge:weigh(hex)
-end
+-- function Overlay.bridge:weigh()
+-- end
 
 return Overlay

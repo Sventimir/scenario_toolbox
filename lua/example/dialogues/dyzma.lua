@@ -2,7 +2,7 @@ local Dialogue = require("scenario_toolbox/lua/events/dialogue")
 
 local Dyzma = {}
 
-function Dyzma:new(spec) -- luacheck: ignore 212 (unused 'self'; inertia from old habit)
+function Dyzma.new(_)
   local dyzma = wesnoth.units.find({ id = "forest-boss"})[1]
   local fst = wesnoth.units.find({ id = wml.variables.summoner.id })[1]
   local players = as_table(

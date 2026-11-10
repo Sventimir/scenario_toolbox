@@ -50,12 +50,12 @@ end
 function mod.mean(it, state, ctrl)
   local total = 0
   local count = 0
-  
+
   for val in it, state, ctrl do
     total = total + val
     count = count + 1
   end
-  
+
   if count > 0 then
     return total / count
   else
@@ -108,7 +108,7 @@ end
 
 mod.Ratio.zero = mod.Ratio:new(0, 1)
 
-function mod.Ratio.zero:prob_check()
+function mod.Ratio.zero:prob_check() -- luacheck: ignore 212 (unused 'self' required by interface)
   return false
 end
 

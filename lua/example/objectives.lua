@@ -1,6 +1,6 @@
 local Objectives = {}
 
-function Objectives:wml(boss_name, boss_title, biome)
+function Objectives.wml(boss_name, boss_title, biome)
   return {
     team_name = "Bohaterowie",
     summary = string.format(
@@ -36,7 +36,8 @@ function Objectives:wml(boss_name, boss_title, biome)
         )
     }),
     wml.tag.note({
-        description = "Specjalne lokacje zawierają opisy. Podejdź do nich dowoną jednostką i kliknij prawym przyciskiem aby się im przyjrzeć."
+        description = "Specjalne lokacje zawierają opisy. Podejdź do nich dowoną jednostką i kliknij prawym przyciskiem"
+          .. " aby się im przyjrzeć."
     }),
   }
 end

@@ -8,7 +8,7 @@ local baziol = wesnoth.units.create({
     name = "Baziol",
 })
 
-function Opening:new(origin)
+function Opening.new(origin)
   local d = Dialogue:new()
 
   local heroes = wesnoth.units.find({ side = "1,2", canrecruit = true })

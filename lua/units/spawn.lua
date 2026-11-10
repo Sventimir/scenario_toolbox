@@ -95,7 +95,7 @@ function Spawn.family:new(spec)
   return setmetatable(s, { __index = self })
 end
 
-function Spawn.family:decorate(wml_tag, hex, side)
+function Spawn.family:decorate(wml_tag, hex, side) -- luacheck: ignore 212 (unused 'self' due to inertia)
   local u = wml.merge(wml_tag, hex:coords(), "append")
   if not u.side then u.side = side end
   return u
@@ -109,7 +109,7 @@ function Spawn.family:placement(hex, side)
       function()
         if hexes.size > 0 then
           local h = hexes:pop_random()
-          return self:decorate(self.child, hex, side)
+          return self:decorate(self.child, h, side)
         else
           return nil
         end
@@ -120,6 +120,7 @@ function Spawn.family:placement(hex, side)
 end
 
 if wesnoth.wml_actions then -- only at runtime
+  -- luacheck: ignore 122 (global state modification)
   function wesnoth.wml_actions.spawn(spec)
     local spawn_proto = spec.type and Spawn[spec.type] or Spawn
     local spawn = spawn_proto:new(wml.literal(spec))

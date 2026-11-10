@@ -1,4 +1,5 @@
 wesnoth.require("~add-ons/scenario_toolbox/lua/lib/core.lua")
+-- luacheck: ignore 111 113 122
 Dialogue = require("scenario_toolbox/lua/events/dialogue")
 Spawn = require("scenario_toolbox/lua/units/spawn")
 Hex = require("scenario_toolbox/lua/map/hex")
@@ -31,7 +32,7 @@ local meadows_name = {
 }
 meadows_terrain = "Gg,Gg^*,Hh,Hh^*,Mm,Mm^*"
 
-micro_ai = {
+local micro_ai = {
   wml.tag.micro_ai({
       ai_type = "big_animals",
       side = meadows.side,
@@ -42,7 +43,6 @@ micro_ai = {
               wml.tag["not"]({ area = "meadows-fight" })
           })
       }),
-      wml.tag.filter_location({ terrain = meadows_terrain }),
       wml.tag.filter_location_wander({ area = "meadows" })
   }),
   wml.tag.micro_ai({
@@ -145,7 +145,7 @@ wesnoth.game_events.add({
     filter = {
       wml.tag.filter({ side = players_str })
     },
-    action = function(...)
+    action = function()
       -- Clear any micro AIs affecting the hit unit.
       wml.variables.second_unit.role = ""
     end
@@ -155,7 +155,7 @@ wesnoth.game_events.add({
     name = "die",
     id = "hero-defeated",
     first_time_only = false,
-    filter = { 
+    filter = {
       wml.tag.filter({
           canrecruit = true,
           side = players_str,
@@ -189,11 +189,10 @@ wesnoth.game_events.add({
 
 function nightly_respawn(spec)
   local spawns = {}
-  local distance = spec.distance or 5
   for s in wml.child_range(spec, "spawn") do
     table.insert(spawns, Spawn:from_spec(wml.literal(s)))
   end
-  if #spawns == 0 then return end 
+  if #spawns == 0 then return end
   local hexes = wesnoth.map.find({
       time_of_day = "chaotic",
       area = spec.area,

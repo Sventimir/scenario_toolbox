@@ -1,8 +1,8 @@
 local Dialogue = require("scenario_toolbox/lua/events/dialogue")
 
-Shazza = {}
+local Shazza = {}
 
-function Shazza:new(spec)
+function Shazza.new(_)
   local shazza = wesnoth.units.find({ id = "meadows-boss" })[1]
   local fst = wesnoth.units.find({ id = wml.variables.summoner.id })[1]
   local snd = wesnoth.units.find({

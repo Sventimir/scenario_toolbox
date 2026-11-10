@@ -34,7 +34,7 @@ function Altar:boss_defeated_action()
           value = next_altar.biome
       }),
       wml.tag.objectives(
-        Objectives:wml(
+        Objectives.wml(
           wml.get_child(next_altar, "name"),
           wml.get_child(next_altar, "title"),
           wml.get_child(next_altar, "biome")

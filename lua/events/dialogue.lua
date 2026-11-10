@@ -1,4 +1,4 @@
-Dialogue = {}
+local Dialogue = {}
 
 function Dialogue:new()
   return setmetatable({ interrupted = false }, { __index = self })
@@ -62,9 +62,9 @@ function Dialogue.Animation:display()
 end
 
 if wesnoth.wml_actions then
-  function wesnoth.wml_actions.dialogue(spec)
+  function wesnoth.wml_actions.dialogue(spec) -- luacheck: ignore 122 (global state modification)
     local D = require(spec.filename)
-    local d = D:new(spec)
+    local d = D.new(spec)
     d:play(spec)
   end
 end
