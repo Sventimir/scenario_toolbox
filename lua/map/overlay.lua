@@ -1,3 +1,4 @@
+local Pred = require("scenario_toolbox/lua/lib/predicate")
 local Prob = require("scenario_toolbox/lua/lib/probability")
 local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 
@@ -9,38 +10,30 @@ function Overlay:new(props)
   return ov
 end
 
+function Overlay:selected() -- luacheck: ignore 212 (unused 'self' required by interface)
+end
+
 function Overlay:__call(terrain)
-  return string.format("%s^%s", terrain, self.code)
-end
-
-function Overlay:weigh(hex)
-  local nearby_keep = any(Hex.is_keep, hex:in_circle(self.distance))
-  local no_free_neighbours = all(get("overlay"), hex:circle(1))
-  return (nearby_keep or no_free_neighbours) and 0 or self.kfreq
-end
-
-function Overlay:apply(hex)
-  hex.overlay = self.app
-  return Hex.Set:singleton(hex)
-end
-
-function Overlay.select(options, hex)
-  local total = 0
-  local freqs = {}
-  for i, ov in ipairs(options) do
-    freqs[i] = ov:weigh(hex)
-    total = total + freqs[i]
+  if self.code then
+    return string.format("%s^%s", terrain, self.code)
+  else
+    return terrain
   end
-  if total <= 0 then
-    return nil
-  end
-  local roll = mathx.random(0, total - 1)
-  for i, freq in ipairs(freqs) do
-    if roll < freqs[i] then
-      return options[i]
-    else
-      roll = roll - freqs[i]
-    end
+end
+
+function Overlay:weigh(hex, map)
+  local nearby_keep = any(
+    function(h)
+      return h:is_keep() and h:distance(hex) == self.distance
+    end,
+    map
+  )
+  local no_free_neighbours = all(
+    get("overlay"),
+    filter(function(h) return h:distance(hex) == 1 end, map:iter())
+  )
+  if not (nearby_keep or no_free_neighbours) then
+      return { weight = self.kfreq, option = self.app }
   end
 end
 
@@ -50,12 +43,8 @@ function Overlay.none:new(spec)
   return Overlay.new(self, { freq = spec.frequency })
 end
 
-function Overlay.none:weigh(hex)
-  return self.freq
-end
-
-function Overlay.none:apply(hex)
-  return Hex.Set:singleton(hex)
+function Overlay.none:weigh()
+  return { weight = self.freq, option = self.app }
 end
 
 Overlay.forest = Overlay:new({ name = "forest" })
@@ -68,12 +57,18 @@ function Overlay.forest:new(spec)
   })
 end
 
-function Overlay.forest:weigh(hex)
-  if hex.height < 0 or hex.height > 1 then
-    return 0
-  else
-    local neighbours = filter(Hex.has_forest, hex:circle(1))
-    return self.base_freq + self.freq_mult * count(neighbours)
+function Overlay.forest:weigh(hex, map)
+  local height = mathx.round(hex.height)
+  if  height >= 0 and height < 2 then
+    local neighbours = map:filter(
+      function(h)
+        return h:distance(hex) == 1 and h.overlay and h.overlay.name == "forest"
+      end
+    )
+    return {
+      weight = self.base_freq + self.freq_mult * neighbours.size,
+      option = self.app
+    }
   end
 end
 
@@ -87,30 +82,30 @@ function Overlay.village:new(spec)
   })
 end
 
-function Overlay.village:weigh(hex)
-  if hex.height < 0 or hex.height > 1 then
-    return 0
-  else
-    local nearby_villages = filter_map(
+function Overlay.village:weigh(hex, map)
+  local height = mathx.round(hex.height)
+  if height >= 0 and hex.height < 2 then
+    local nearby_villages_score = filter_map(
       function(h)
-        if h:has_village() then
-          return h:distance(hex)
-        else
-          return 0
+        if h.overlay and h.overlay.name == "village" then
+          return self.min_dist - h:distance(hex)
         end
       end,
-      hex:in_circle(self.min_dist)
+      map:in_circle(hex, self.min_dist):iter()
     )
-    return self.base_freq - fold(arith.add, 0, nearby_villages)
+    return {
+      weight = self.base_freq - fold(arith.add, 0, nearby_villages_score),
+      option = self.app
+    }
   end
 end
 
 Overlay.castle = Overlay:new({ name = "castle" })
 
 function Overlay.castle:new(spec)
-  return Overlay.new(self, { 
-      keep = setmetatable({ name = "keep", code = spec.keep }, self),
-      castle = setmetatable({ name = "castle", code = spec.castle }, self),
+  return Overlay.new(self, {
+      keep = setmetatable({ name = "keep", code = spec.keep }, { __index = self }),
+      castle = setmetatable({ name = "castle", code = spec.castle }, { __index = self }),
       kfreq = spec.keep_frequency,
       distance = spec.distance,
       size = Prob.Normal:new(spec.mean_size, spec.size_std_dev)
@@ -121,19 +116,34 @@ function Overlay.castle:__call()
   return self.code
 end
 
-function Overlay.castle:apply(hex)
-  local castle = Hex.Set:singleton(hex)
-  local neighbours = Hex.Set:new(
-    hex:circle(1)):filter(function(h) return not h.overlay end
-  )
-  local size = self.size:sample_int(1, neighbours.size)
-  hex.overlay = self.keep
-  for _ = 1, size do
-    local h = neighbours:pop_random()
-    h.overlay = self.castle
-    castle:add(h)
+function Overlay.castle:selected()
+  if self.keep then
+    self.keep.size = self.keep.size - 1
   end
-  return castle
+end
+
+function Overlay.castle:weigh(hex, map)
+  local neighbourhood = map:in_circle(hex, self.distance)
+  local sites_in_range = neighbourhood:filter(Pred:has("site"))
+  local keeps_in_range = neighbourhood:filter(Pred:has("overlay", "keep"))
+  local neighbours = keeps_in_range:intersect(map:circle(hex, 1))
+  local blockers = keeps_in_range:union(sites_in_range)
+  local keep = neighbours.size > 0 and neighbours:pop_random()
+  local free_neighbours = 6 - map:circle(hex, 1).size
+  if keep and keep.overlay.size > 0 then
+    return {
+      weight = 1000000,
+      option = setmetatable({ keep = keep.overlay }, { __index = self.castle, __call = self.__call })
+    }
+  elseif blockers.size == 0 and mathx.round(hex.height) >= 0 and free_neighbours > 0 then
+    return {
+      weight = self.kfreq,
+      option = setmetatable(
+        { size = self.size:sample_int(1, free_neighbours) },
+        { __index = self.keep, __call = self.__call }
+      )
+    }
+  end
 end
 
 Overlay.bridge = Overlay:new({ name = "bridge" })
@@ -142,6 +152,11 @@ Overlay.bridge.directions = {
   ["/"] = { Vec.unitary.sw, Vec.unitary.ne },
   ["\\"] = { Vec.unitary.se, Vec.unitary.nw },
 }
+
+function Overlay.bridge.is_water(hex)
+  local t = hex:terrain()
+  return string.find(t, "^W") or string.find(t, "^Ss")
+end
 
 function Overlay.bridge:new(spec)
   local b = Overlay.new(self, {
@@ -158,35 +173,17 @@ function Overlay.bridge:__call(terrain)
   return string.format("%s^%s%s", terrain, self.code, self.dir)
 end
 
-function Overlay.bridge:is_land(hex)
-  return hex and not hex:is_water()
-end
-
-function Overlay.bridge:applicable_directions(hex)
-  local applicable = {}
-  for symbol, vecs in pairs(self.directions) do
-    if all(function(v) return self:is_land(hex:translate(v)) end, iter(vecs)) then
-      table.insert(applicable, symbol)
-    end
-  end
-  return applicable
-end
-
-function Overlay.bridge:apply(hex)
-  local applicable = self:applicable_directions(hex)
-  hex.overlay = self.app(applicable[mathx.random(#applicable)])
-  return Hex.Set:singleton(hex)
-end
+-- function Overlay.bridge:applicable_directions(hex)
+--   local applicable = {}
+--   for symbol, vecs in pairs(self.directions) do
+--     if all(function(v) return self:is_land(hex:translate(v)) end, iter(vecs)) then
+--       table.insert(applicable, symbol)
+--     end
+--   end
+--   return applicable
+-- end
 
 function Overlay.bridge:weigh(hex)
-  local applicable = not self:is_land(hex)
-    and count(filter(function(h) return not self:is_land(hex) end, hex:circle(1))) > 1
-    and #self:applicable_directions(hex) > 0
-  if applicable then
-    return self.freq
-  else
-    return 0
-  end
 end
 
 return Overlay

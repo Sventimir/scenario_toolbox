@@ -5,7 +5,10 @@ Shazza = {}
 function Shazza:new(spec)
   local shazza = wesnoth.units.find({ id = "meadows-boss" })[1]
   local fst = wesnoth.units.find({ id = wml.variables.summoner.id })[1]
-  local snd = wesnoth.units.find({ side = spec.player_sides, wml.tag["not"]({ id = fst.id }) })[1]
+  local snd = wesnoth.units.find({
+      wml.tag.filter_side({ team_name = "Boahterowie" }),
+      wml.tag["not"]({ id = fst.id })
+  })[1]
   local d = Dialogue:new()
 
   d:add(Dialogue.Line:new(fst, "Shazza, Shazza, Shazza, Shazza!\nKtoś mi ciebie zabić kazał."))

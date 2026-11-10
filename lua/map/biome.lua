@@ -1,13 +1,11 @@
-local ModHex = require("scenario_toolbox/lua/map/hex")
+local Choice = require("scenario_toolbox/lua/lib/choice")
+local Hex = require("scenario_toolbox/lua/map/hex")
 local Overlay = require("scenario_toolbox/lua/map/overlay")
-local Prob = require("scenario_toolbox/lua/lib/probability")
 local Spawn = require("scenario_toolbox/lua/units/spawn")
-
-local Hex = ModHex.Legacy
 
 local Biome = {}
 
-function Biome:new(spec, side)
+function Biome:new(spec, side, Site)
   local terrain = wml.get_child(spec, "terrain")
   local biome = {
     name = spec.name,
@@ -24,8 +22,7 @@ function Biome:new(spec, side)
     spawn = {},
     spawn_distance = spec.spawn_distance,
     hexes = Hex.Set:new(),
-    side = side,
-    distance_from_center = Prob.Normal:from_wml(wml.get_child(spec, "distance_from_center")),
+    side = side
   }
 
   for ov in wml.child_range(spec, "overlay") do
@@ -33,7 +30,7 @@ function Biome:new(spec, side)
   end
 
   for site in wml.child_range(spec, "site") do
-    table.insert(biome.sites, Site[site.type]:new(site, biome))
+    table.insert(biome.sites, Site[site.type].new(biome, site))
   end
 
   for spawn in wml.child_range(spec, "spawn") do
@@ -71,6 +68,17 @@ function Biome:time_area(it, state)
     table.insert(area, wml.tag.time(time))
   end
   return area
+end
+
+function Biome:overlays(hex, map)
+  return Choice.new(
+    filter_map(
+      function(ov)
+        return ov:weigh(hex, map)
+      end,
+      iter(self.overlay)
+    )
+  )
 end
 
 return Biome

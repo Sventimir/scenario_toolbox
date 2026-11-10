@@ -1,4 +1,4 @@
-Prob = { Normal = { mean = 0, stddev = 1 } }
+local Prob = { Normal = { mean = 0, stddev = 1 } }
 
 function Prob.Normal:new(mean, stddev)
   return setmetatable(
@@ -8,7 +8,10 @@ function Prob.Normal:new(mean, stddev)
 end
 
 function Prob.Normal:from_wml(spec)
-  return self:new(spec.mean, spec.standard_deviation)
+  local this = self:new(spec.mean, spec.standard_deviation)
+  this.minimum = spec.minimum
+  this.maximum = spec.maximum
+  return this
 end
 
 function Prob.Normal:probability(x)
@@ -40,18 +43,13 @@ function Prob.Normal:sample_real()
 end
 
 function Prob.Normal:sample(min, max)
-  return mathx.clamp(self:sample_real(), min, max)
+  return mathx.clamp(self:sample_real(), min or self.minimum, max or self.maximum)
 end
 
 function Prob.Normal:sample_int(min, max)
-  return mathx.round(self:sample(min, max))
+  return mathx.round(self:sample(min or self.minimum, max or self.maximum))
 end
 
 Prob.Normal.canonic = Prob.Normal:new()
-
-function Prob.variance(sample)
-  local mean = arith.mean(iter(sample))
-  return fold(add, 0, map(function(v) return square(v - mean) end, iter(sample)))
-end
 
 return Prob

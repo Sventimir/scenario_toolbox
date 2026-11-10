@@ -1,7 +1,7 @@
 require("scenario_toolbox/lua/lib/core")
 local Hex = require("scenario_toolbox/lua/map/hex")
 
-local Spawn = {}
+local Spawn = { map = {} }
 
 if wesnoth and wesnoth.current then -- this only exists during game
   function Spawn.valid_location(hex)
@@ -10,7 +10,7 @@ if wesnoth and wesnoth.current then -- this only exists during game
   end
 else
   function Spawn.valid_location(hex)
-    return hex.x > 0 and hex.x <= hex.map.width and hex.y > 0 and hex.y <= hex.map.height
+    return hex.x > 0 and hex.x <= Spawn.map.width and hex.y > 0 and hex.y <= Spawn.map.height
   end
 end
 

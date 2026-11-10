@@ -89,7 +89,7 @@ end
 
 function filter(predicate, iter, iter_state, ctrl)
   local state = { ctrl = ctrl, intern = iter_state }
-  return function(_, ctrl)
+  return function(_, _ctrl)
     state.ctrl = iter(state.intern, state.ctrl)
     while state.ctrl ~= nil and not predicate(state.ctrl) do
       state.ctrl = iter(state.intern, state.ctrl)
@@ -235,6 +235,10 @@ function keys(t)
   return keys
 end
 
+function maybe(default, f, opt)
+  return opt and f(opt) or default
+end
+
 Debug = { active = false, tracked = {} }
 
 function Debug:activate()
@@ -264,7 +268,7 @@ end
 
 function Debug:catch(...)
   if self.active then
-    success, value = pcall(...)
+    local success, value = pcall(...)
     if success then
       return value
     else

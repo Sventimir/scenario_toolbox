@@ -17,9 +17,26 @@ function Site.burial:spawn(spec)
   }
   local loc = Hex.Set:new(iter(wesnoth.map.find(filter)))
   if not loc:empty() then
-    local spawns = wml.child_array(spec, "spawn")
+    local spawns = as_table(
+      filter_map(
+        function(spawn)
+          local side
+          if type(spawn.side) == "number" then
+            side = spawn.side
+          else
+            side = wesnoth.sides.find({ team_name = spec.side })
+          end
+          if side.side == wml.variables.side_number then
+            local spec = wml.clone(spawn)
+            spec.side = side.side
+            return spec
+          end
+        end,
+        iter(wml.child_array(spec, "spawn"))
+      )
+    )
     local spawn = Spawn:new(wml.literal(spawns[mathx.random(#spawns)]))
-    spawn:spawn(loc:random(), spec.side)
+    spawn:spawn(loc:random(), side.side)
   end
 end
 

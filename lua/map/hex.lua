@@ -1,5 +1,7 @@
+local Choice = require("scenario_toolbox/lua/lib/choice")
 local Vec = require("scenario_toolbox/lua/map/cubic_vector")
 local Predicate = require("scenario_toolbox/lua/lib/predicate")
+local Prob = require("scenario_toolbox/lua/lib/probability")
 
 local Mod = {}
 
@@ -11,15 +13,20 @@ function Mod.Base.map_size(x, y)
 end
 
 function Mod.Base.new(x, y)
-  return setmetatable({ x = x, y = y }, Mod.__Base)
+  local this = wesnoth.map.read_location(x, y)
+  return setmetatable(this, Mod.__Base)
 end
 
 function Mod.Base:equals(other)
   return self.x == other.x and self.y == other.y
 end
 
+function Mod.Base:coords()
+  return { x = self.x, y = self.y }
+end
+
 function Mod.Base:as_vec()
-  return Vec.new(self.y - mathx.floor(self.x / 2), self.x)
+  return Vec.new(self.y - mathx.ceil(self.x / 2), self.x)
 end
 
 function Mod.Base:translate(v)
@@ -44,7 +51,7 @@ end
 
 function Mod.Base:on_map(width, height)
   local size = self.map_size(width, height)
-  return self.x > 0 and self.x <= size.width and self.y > 0 and self.y <= size.height
+  return self.x >= 0 and self.x <= size.width + 1 and self.y >= 0 and self.y <= size.height + 1
 end
 
 function Mod.Base:is_border(width, height)
@@ -55,6 +62,20 @@ end
 function Mod.Base:border_distance(width, height)
   local size = self.map_size(width, height)
   return mathx.min(self.x, self.y, size.width - self.x + 1, size.height - self.y + 1)
+end
+
+function Mod.Base:set_label(text, colour, visible_in_fog)
+  if text then
+    self.__label = { text = text, color = colour, visible_in_fog = visible_in_fog }
+  else
+    self.__label = nil
+  end
+end
+
+function Mod.Base:label()
+  if self.__label then
+    return wml.merge(self.__label, self:coords())
+  end
 end
 
 function Mod.__Base:__tostring()
@@ -82,6 +103,58 @@ function Mod.Base.from_wesnoth(hex)
   return hex
 end
 
+Mod.Gen = setmetatable({}, Mod.__Base)
+Mod.__Gen = { __index = Mod.Gen }
+
+function Mod.Gen.new(x, y)
+  return setmetatable(Mod.Base.new(x, y), Mod.__Gen)
+end
+
+function Mod.Gen:propagate()
+  return { option = self, weight = 1 }
+end
+
+function Mod.Gen:generate(map)
+  local neighbours = map:circle(self, 1)
+  self.height = self:gen_height(neighbours, map)
+  self.biome = self:gen_biome(neighbours, map)
+  self.overlay = self:gen_overlay(neighbours, map)
+end
+
+
+function Mod.Gen:gen_height(neighbours, _infl) -- luacheck:ignore 212 (unused 'self' required by the interface)
+  local mean = arith.mean(map(get("height"), neighbours:iter()))
+  local variance = arith.mean(map(function(h) return arith.square(h.height - mean) end, neighbours:iter()))
+  local height = Prob.Normal:new(mean or 0, mathx.max(0.5, maybe(1, mathx.sqrt, variance)))
+  return height:sample(-2, 2)
+end
+
+function Mod.Gen:gen_biome(neighbours, _infl)
+  local biome = Choice.new(map(function(h) return { option = h.biome, weight = 1 } end, neighbours:iter()))
+  local selection = biome:select()
+  return selection or error(string.format("No biome candidate to choose from at (%d, %d)", self.x, self.y))
+end
+
+function Mod.Gen:gen_overlay(_neighb, map)
+  local overlay = self.biome:overlays(self, map)
+  local o = overlay:select()
+  o:selected()
+  return o
+end
+
+function Mod.Gen:terrain()
+  local start = self.starting_location and string.format("%d ", self.starting_location) or ""
+  local terrain = self.biome.terrain[mathx.round(self.height)]
+  if self.overlay then
+    return start .. self.overlay(terrain)
+  else
+    return start .. terrain
+  end
+end
+
+function Mod.Gen:wml() -- luacheck:ignore 212 (unused 'self' required by the interface)
+end
+
 Mod.Legacy = setmetatable({}, Mod.__Base)
 Mod.__Legacy = { __index = Mod.Legacy, __tostring = Mod.__Base.__tostring, __equal = Mod.__Base.__equal }
 
@@ -99,10 +172,6 @@ function Mod.Legacy.new(map, x, y, biome)
     biome:add_hex(this)
   end
   return setmetatable(this, Mod.__Legacy)
-end
-
-function Mod.Legacy:coords()
-  return { x = self.x, y = self.y }
 end
 
 function Mod.Legacy:get_height()
@@ -123,12 +192,6 @@ end
 
 function Mod.Legacy:set_label(text, colour)
   self.__label = { text = text, colour = colour }
-end
-
-function Mod.Legacy:label()
-  if self.__label then
-    return wml.merge(self.__label, self:coords())
-  end
 end
 
 function Mod.Legacy:has_feature(name)
@@ -181,6 +244,7 @@ function Mod.Set:new(hexes, state, ctrl)
   this.size = 0
   this.max_row = 0
   this.min_row = 0
+  this.index = {}
   if hexes then
     for hex in hexes, state, ctrl do
       this:add(hex)
@@ -210,6 +274,9 @@ function Mod.Set:add(hex)
     self.min_row = mathx.min(self.min_row, hex.y)
     self.max_row = mathx.max(self.max_row, hex.y)
   end
+  for _, idx in pairs(self.index) do
+    idx:update(hex)
+  end
 end
 
 function Mod.Set:remove(...)
@@ -219,6 +286,9 @@ function Mod.Set:remove(...)
     if h then self.size = self.size - 1 end
     self[hex.y][hex.x] = nil
     return h
+  end
+  for idx in iter(self.index) do
+    idx.contents = as_table(filter(function(h) return h.x == hex.x and h.y == hex.y end, iter(idx.contents)))
   end
 end
 
@@ -249,15 +319,33 @@ end
 
 function Mod.Set:as_area()
   local it = self:iter()
-  local h = it()
-  if not h then return nil end
-  local x = string.format("%i", h.x)
-  local y = string.format("%i", h.y)
+  local hex = it()
+  if not hex then return nil end
+  local x = string.format("%i", hex.x)
+  local y = string.format("%i", hex.y)
   for h in it do
     x = string.format("%s,%i", x, h.x)
     y = string.format("%s,%i", y, h.y)
   end
   return x, y
+end
+
+function Mod.Set:as_map_data()
+  local map = ""
+
+  for y = 0, self.max_row do
+    local row = self[y] or error(string.format("Missing row %d", y))
+    for x = 0, #row do
+      local hex = row[x] or error(string.format("Missing hex(%d, %d)", x, y))
+      if x < #row then
+        map = map .. hex:terrain() .. ", "
+      else
+        map = map .. hex:terrain() .. "\n"
+      end
+    end
+  end
+
+  return map
 end
 
 function Mod.Set:member_pred()
@@ -291,6 +379,14 @@ end
 
 function Mod.Set:filter(predicate)
   return Mod.Set:new(filter(predicate, self:iter()))
+end
+
+function Mod.Set:circle(center, radius)
+  return Mod.Set:new(filter_map(function(h) return self:get(h) end, center:circle(radius)))
+end
+
+function Mod.Set:in_circle(center, radius)
+  return Mod.Set:new(filter_map(function(h) return self:get(h) end, center:in_circle(radius)))
 end
 
 function Mod.Set:intersect(other)
@@ -335,6 +431,47 @@ function Mod.Set:from_wml(spec)
   return hset
 end
 
+function Mod.Set:add_index(name, init)
+  self.index[name] = Mod.Set.Index.new(self, init)
+  return self.index[name]
+end
+
 Mod.Legacy.Set = Mod.Set
+
+Mod.Set.Index = {}
+Mod.Set.__Index = { __index = Mod.Set.Index }
+
+function Mod.Set.__Index.__index(self, idx)
+  if type(idx) == "number" then
+    return self.contents[idx]
+  else
+    return Mod.Set.Index[idx]
+  end
+end
+
+function Mod.Set.Index.new(set, init)
+  local this = { contents = {} }
+  if type(init) == "function" then
+    this.filter = init
+    for hex in set:iter() do
+      if this.filter(hex) then
+        table.insert(this.contents, hex)
+      end
+    end
+  else
+    this.contents = init
+  end
+  return setmetatable(this, Mod.Set.__Index)
+end
+
+function Mod.Set.Index:update(hex)
+  if self.filter and self.filter(hex) then
+    table.insert(self.contents, hex)
+  end
+end
+
+function Mod.Set.Index:iter()
+  return iter(self.contents)
+end
 
 return Mod
